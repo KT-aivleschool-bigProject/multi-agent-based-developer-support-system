@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: communication
+  labels:
+    app: communication
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: communication
+  template:
+    metadata:
+      labels:
+        app: communication
+    spec:
+      containers:
+        - name: communication
+          image: "username/communication:latest"
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5

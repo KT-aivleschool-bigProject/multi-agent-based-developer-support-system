@@ -1,0 +1,108 @@
+server:
+  port: 8088
+
+---
+
+spring:
+  profiles: default
+  cloud:
+    gateway:
+#<<< API Gateway / Routes
+      routes:
+        - id: usermanagement
+          uri: http://localhost:8082
+          predicates:
+            - Path=/users/**, 
+        - id: codeassistant
+          uri: http://localhost:8083
+          predicates:
+            - Path=, 
+        - id: task
+          uri: http://localhost:8084
+          predicates:
+            - Path=/taskAssignments/**, 
+        - id: communication
+          uri: http://localhost:8085
+          predicates:
+            - Path=, 
+        - id: schedule
+          uri: http://localhost:8086
+          predicates:
+            - Path=/calendars/**, 
+        - id: notification
+          uri: http://localhost:8087
+          predicates:
+            - Path=/notifications/**, 
+        - id: board
+          uri: http://localhost:8088
+          predicates:
+            - Path=/posts/**, /attachments/**, /comments/**, 
+        - id: frontend
+          uri: http://localhost:8080
+          predicates:
+            - Path=/**
+#>>> API Gateway / Routes
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+
+---
+
+spring:
+  profiles: docker
+  cloud:
+    gateway:
+      routes:
+        - id: usermanagement
+          uri: http://usermanagement:8080
+          predicates:
+            - Path=/users/**, 
+        - id: codeassistant
+          uri: http://codeassistant:8080
+          predicates:
+            - Path=, 
+        - id: task
+          uri: http://task:8080
+          predicates:
+            - Path=/taskAssignments/**, 
+        - id: communication
+          uri: http://communication:8080
+          predicates:
+            - Path=, 
+        - id: schedule
+          uri: http://schedule:8080
+          predicates:
+            - Path=/calendars/**, 
+        - id: notification
+          uri: http://notification:8080
+          predicates:
+            - Path=/notifications/**, 
+        - id: board
+          uri: http://board:8080
+          predicates:
+            - Path=/posts/**, /attachments/**, /comments/**, 
+        - id: frontend
+          uri: http://frontend:8080
+          predicates:
+            - Path=/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - "*"
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+
+server:
+  port: 8080
