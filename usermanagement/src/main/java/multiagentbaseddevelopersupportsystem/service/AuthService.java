@@ -25,17 +25,15 @@ public class AuthService {
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    // 회원가입
     public void signup(SignupCommand command) {
         if (userRepository.existsByEmail(command.getEmail())) {
             throw new BusinessException("이미 사용 중인 이메일입니다.", "DUPLICATE_EMAIL");
         }
-        User user = User.from(command, passwordEncoder);
+        User user = User.toEntity(command, passwordEncoder);
         userRepository.save(user);
     }
 
-    // 로그인
-    public TokenDto login(LoginCommand command) {
+    public TokenResponseDto login(LoginCommand command) {
         // 1. Login ID/PW 를 기반으로 AuthenticationToken 생성
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(command.getEmail(), command.getPassword());
 
@@ -44,7 +42,7 @@ public class AuthService {
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
 
         // 3. 인증 정보를 기반으로 JWT 토큰 생성
-        TokenDto tokenDto = tokenProvider.generateTokenDto(authentication);
+        TokenResponseDto tokenDto = tokenProvider.generateTokenDto(authentication);
 
         // 4. RefreshToken 저장
         RefreshToken refreshToken = RefreshToken.builder()
@@ -58,8 +56,7 @@ public class AuthService {
         return tokenDto;
     }
 
-    // 토큰 재발급
-    public TokenDto reissue(TokenRequestDto tokenRequestDto) {
+    public TokenResponseDto reissue(TokenRequestDto tokenRequestDto) {
         // 1. Refresh Token 검증
         if (!tokenProvider.validateToken(tokenRequestDto.getRefreshToken())) {
             throw new RuntimeException("Refresh Token 이 유효하지 않습니다.");
@@ -78,7 +75,7 @@ public class AuthService {
         }
 
         // 5. 새로운 토큰 생성
-        TokenDto tokenDto = null;
+        TokenResponseDto tokenDto = null;
         if (tokenProvider.refreshTokenPeriodCheck(refreshToken.getValue())) {
             // 5-1. Refresh Token의 유효기간이 3일 미만일 경우 전체(Access / Refresh) 재발급
             tokenDto = tokenProvider.generateTokenDto(authentication);
