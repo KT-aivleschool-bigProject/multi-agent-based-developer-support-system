@@ -5,11 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import multiagentbaseddevelopersupportsystem.domain.*;
 import multiagentbaseddevelopersupportsystem.exception.BusinessException;
 import multiagentbaseddevelopersupportsystem.security.TokenProvider;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AuthService {
 
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
@@ -31,69 +30,70 @@ public class AuthService {
         }
         User user = User.toEntity(command, passwordEncoder);
         userRepository.save(user);
+        log.info("회원가입 성공: {}", command.getEmail());
     }
 
     public TokenResponseDto login(LoginCommand command) {
-        // 1. Login ID/PW 를 기반으로 AuthenticationToken 생성
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(command.getEmail(), command.getPassword());
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(command.getEmail(), command.getPassword());
 
-        // 2. 실제로 검증 (사용자 비밀번호 체크) 이 이루어지는 부분
-        //    authenticate 메서드가 실행이 될 때 CustomUserDetailsService 에서 만들었던 loadUserByUsername 메서드가 실행됨
-        Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        Authentication authentication;
+        try {
+            authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+        } catch (Exception e) {
+            throw new BusinessException("이메일 또는 비밀번호가 일치하지 않습니다.", "AUTHENTICATION_FAILED");
+        }
 
-        // 3. 인증 정보를 기반으로 JWT 토큰 생성
         TokenResponseDto tokenDto = tokenProvider.generateTokenDto(authentication);
 
-        // 4. RefreshToken 저장
         RefreshToken refreshToken = RefreshToken.builder()
                 .key(authentication.getName())
                 .value(tokenDto.getRefreshToken())
                 .build();
 
         refreshTokenRepository.save(refreshToken);
+        log.info("로그인 성공: {}", authentication.getName());
 
-        // 5. 토큰 발급
         return tokenDto;
     }
 
     public TokenResponseDto reissue(TokenRequestDto tokenRequestDto) {
-        // 1. Refresh Token 검증
         if (!tokenProvider.validateToken(tokenRequestDto.getRefreshToken())) {
-            throw new RuntimeException("Refresh Token 이 유효하지 않습니다.");
+            throw new BusinessException("유효하지 않은 토큰입니다.", "INVALID_REFRESH_TOKEN");
         }
 
-        // 2. Access Token 에서 Member ID 가져오기
         Authentication authentication = tokenProvider.getAuthentication(tokenRequestDto.getAccessToken());
 
-        // 3. 저장소에서 Member ID 를 기반으로 Refresh Token 값 가져옴
-        RefreshToken refreshToken = refreshTokenRepository.findByKey(authentication.getName())
-                .orElseThrow(() -> new RuntimeException("로그아웃 된 사용자입니다."));
+        RefreshToken refreshToken = refreshTokenRepository.findById(authentication.getName())
+                .orElseThrow(() -> new BusinessException("사용자 인증 정보를 찾을 수 없습니다.", "REFRESH_TOKEN_NOT_FOUND"));
 
-        // 4. Refresh Token 일치하는지 검사
         if (!refreshToken.getValue().equals(tokenRequestDto.getRefreshToken())) {
-            throw new RuntimeException("토큰의 유저 정보가 일치하지 않습니다.");
+            throw new BusinessException("토큰 정보가 일치하지 않습니다.", "TOKEN_MISMATCH");
         }
 
-        // 5. 새로운 토큰 생성
-        TokenResponseDto tokenDto = null;
+        TokenResponseDto tokenDto;
         if (tokenProvider.refreshTokenPeriodCheck(refreshToken.getValue())) {
-            // 5-1. Refresh Token의 유효기간이 3일 미만일 경우 전체(Access / Refresh) 재발급
             tokenDto = tokenProvider.generateTokenDto(authentication);
-
-            // 6. Refresh Token 저장소 정보 업데이트
             RefreshToken newRefreshToken = refreshToken.updateValue(tokenDto.getRefreshToken());
             refreshTokenRepository.save(newRefreshToken);
         } else {
-            // 5-2. Refresh Token의 유효기간이 3일 이상일 경우 Access Token만 재발급
             tokenDto = tokenProvider.createAccessToken(authentication);
         }
 
-        // 토큰 발급
+        log.info("토큰 재발급 완료: {}", authentication.getName());
+
         return tokenDto;
     }
 
-    // 로그아웃
-    // public void logout(Long userId) {
-    //     refreshTokenService.deleteAllByUserId(userId);
-    // }
+    public void logout(String accessToken) {
+        Authentication authentication = tokenProvider.getAuthentication(accessToken);
+        String key = authentication.getName();
+
+        if (!refreshTokenRepository.existsById(key)) {
+            throw new BusinessException("이미 로그아웃된 사용자입니다.", "ALREADY_LOGGED_OUT");
+        }
+
+        refreshTokenRepository.deleteById(key);
+        log.info("로그아웃 완료: {}", key);
+    }
 }

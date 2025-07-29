@@ -32,9 +32,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.reissue(tokenRequestDto));
     }
 
-    // @PostMapping("/logout")
-    // public ResponseEntity<Void> logout(@RequestParam Long userId) {
-    //     authService.logout(userId);
-    //     return ResponseEntity.noContent().build(); 
-    // }
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String token) {
+        authService.logout(token);
+        return ResponseEntity.noContent().build();  
+    }
+
 }
