@@ -1,3 +1,5 @@
 {
-    "java.compile.nullAnalysis.mode": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.jdt.ls.vmargs": "-javaagent:${workspaceFolder}/.m2/repository/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar"
 }
