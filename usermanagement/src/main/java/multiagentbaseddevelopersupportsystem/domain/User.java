@@ -10,7 +10,6 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Role;
 
-
 @Entity
 @Data
 @Builder
@@ -45,7 +44,7 @@ public class User {
     @Column(name = "project_id")
     private Long projectId;
 
-    public static User from(SignupCommand cmd, PasswordEncoder encoder) {
+    public static User toEntity(SignupCommand cmd, PasswordEncoder encoder) {
         return User.builder()
                 .email(cmd.getEmail())
                 .password(encoder.encode(cmd.getPassword()))

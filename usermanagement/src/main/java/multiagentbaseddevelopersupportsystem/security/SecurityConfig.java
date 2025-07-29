@@ -59,13 +59,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.headers().frameOptions().disable();
     }
 
-    // @Bean
-    // @Override
-    // public AuthenticationManager authenticationManagerBean() throws Exception {
-    //     return super.authenticationManagerBean();
-    // }
-
-    // 암호화에 사용할 PasswordEncoder Bean 등록
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
