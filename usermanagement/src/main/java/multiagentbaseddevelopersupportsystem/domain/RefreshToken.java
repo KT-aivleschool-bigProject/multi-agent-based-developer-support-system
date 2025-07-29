@@ -1,31 +1,22 @@
-// RefreshToken.java
 package multiagentbaseddevelopersupportsystem.domain;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import org.springframework.data.annotation.Id;
+import lombok.*;
+import org.springframework.data.redis.core.RedisHash;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-
-@Entity
-@Data
+@RedisHash(value = "refreshToken", timeToLive = 604800) // TTL: 7일
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class RefreshToken {
-    @Id
-    @Column(name = "rt_key")
-    private String key;
 
-    @Column(name = "rt_value")
+    @Id
+    private String key;
     private String value;
 
-    public RefreshToken updateValue(String token) {
-        this.value = token;
+    public RefreshToken updateValue(String newToken) {
+        this.value = newToken;
         return this;
     }
 }
