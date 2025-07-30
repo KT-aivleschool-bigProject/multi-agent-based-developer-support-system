@@ -4,24 +4,33 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
-import multiagentbaseddevelopersupportsystem.domain.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import javax.validation.Valid;
 
-//<<< Clean Arch / Inbound Adaptor
+import multiagentbaseddevelopersupportsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.service.PostService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
+
 
 @RestController
-// @RequestMapping(value="/posts")
-@Transactional
+@RequestMapping(value="/posts")
+@RequiredArgsConstructor
 public class PostController {
 
-    @Autowired
-    PostRepository postRepository;
+    private final PostService postService;
+
+    @PostMapping("/startpostwriting")
+    public ResponseEntity<Post> startPostWriting() {
+        Post post = postService.startPostWriting();
+        return ResponseEntity.ok(post);
+    }   
 
     @RequestMapping(
-        value = "/posts/{id}/savepost",
+        value = "/{id}/savepost",
         method = RequestMethod.PUT,
         produces = "application/json;charset=UTF-8"
     )
@@ -43,7 +52,7 @@ public class PostController {
     }
 
     @RequestMapping(
-        value = "/posts/{id}/deletepost",
+        value = "/{id}/deletepost",
         method = RequestMethod.DELETE,
         produces = "application/json;charset=UTF-8"
     )
@@ -64,7 +73,7 @@ public class PostController {
     }
 
     @RequestMapping(
-        value = "/posts/{id}/increaseviewcount",
+        value = "/{id}/increaseviewcount",
         method = RequestMethod.PUT,
         produces = "application/json;charset=UTF-8"
     )
@@ -85,7 +94,7 @@ public class PostController {
     }
 
     @RequestMapping(
-        value = "/posts/{id}/editpost",
+        value = "/{id}/editpost",
         method = RequestMethod.PUT,
         produces = "application/json;charset=UTF-8"
     )
@@ -106,4 +115,3 @@ public class PostController {
         return post;
     }
 }
-//>>> Clean Arch / Inbound Adaptor

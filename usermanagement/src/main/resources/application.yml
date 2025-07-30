@@ -4,25 +4,7 @@ server:
 spring:
   application:
     name: usermanagement
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:testdb
-    username: sa
-    password: 
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password:
-
+  
 jwt:
   header: Authorization
   headerPrefix: Bearer
@@ -60,12 +42,24 @@ logging:
 
 spring:
   profiles: default
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   jpa:
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-        implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
   cloud:
     stream:
       kafka:

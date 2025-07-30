@@ -44,20 +44,24 @@ public class TokenProvider {
     }
 
     public TokenResponseDto createAccessToken(Authentication authentication) {
-        // 권한들 가져오기
+
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
 
         long now = (new Date()).getTime();
 
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        Long userId = principal.getUserId();
+
         // Access Token 생성
         Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
         String accessToken = Jwts.builder()
-                .setSubject(authentication.getName())       // payload "sub": "name"
-                .claim(AUTHORITIES_KEY, authorities)        // payload "auth": "USER"
-                .setExpiration(accessTokenExpiresIn)        // payload "exp": 151621022 (ex)
-                .signWith(key, SignatureAlgorithm.HS512)    // header "alg": "HS512"
+                .setSubject(authentication.getName())     
+                .claim(AUTHORITIES_KEY, authorities)
+                .claim("userId", userId)       
+                .setExpiration(accessTokenExpiresIn)     
+                .signWith(key, SignatureAlgorithm.HS512)    
                 .compact();
 
         return TokenResponseDto.builder()
@@ -76,13 +80,17 @@ public class TokenProvider {
 
         long now = (new Date()).getTime();
 
+        CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
+        Long userId = principal.getUserId();
+
         // Access Token 생성
         Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
         String accessToken = Jwts.builder()
-                .setSubject(authentication.getName())       // payload "sub": "name"
-                .claim(AUTHORITIES_KEY, authorities)        // payload "auth": "USER"
-                .setExpiration(accessTokenExpiresIn)        // payload "exp": 151621022 (ex)
-                .signWith(key, SignatureAlgorithm.HS512)    // header "alg": "HS512"
+                .setSubject(authentication.getName())       
+                .claim(AUTHORITIES_KEY, authorities) 
+                .claim("userId", userId)       
+                .setExpiration(accessTokenExpiresIn)        
+                .signWith(key, SignatureAlgorithm.HS512)   
                 .compact();
 
         // Refresh Token 생성
@@ -113,8 +121,15 @@ public class TokenProvider {
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-        // UserDetails 객체를 만들어서 Authentication 리턴
-        UserDetails principal = new User(claims.getSubject(), "", authorities);
+        String email = claims.getSubject();
+        Long userId = claims.get("userId", Long.class);
+
+        CustomUserDetails principal = new CustomUserDetails(
+            userId,
+            email,
+            "", 
+            authorities
+        );
 
         return new UsernamePasswordAuthenticationToken(principal, "", authorities);
     }
