@@ -5,15 +5,24 @@ import javax.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import multiagentbaseddevelopersupportsystem.domain.Post;
+import multiagentbaseddevelopersupportsystem.domain.PostRepository;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
+@RequiredArgsConstructor
 public class PostService {
-    public Post startPostWriting() {
-        // Logic to start post writing
-        Post post = new Post();
-        // Initialize post with default values if necessary
-        return post;
+
+    private final PostRepository postRepository;
+
+    public Post startPostWriting(Long userId) {
+        Post post = Post.builder()
+            .title("")
+            .content("")
+            .viewCount(0)
+            .userId(userId)
+            .build();
+
+        return postRepository.save(post);
     }
 }

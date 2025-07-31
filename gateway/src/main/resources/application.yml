@@ -1,18 +1,21 @@
 server:
   port: 8088
 
+jwt:
+  header: Authorization
+  headerPrefix: Bearer
+  secret: ${JWT_SECRET_KEY}
 ---
 
 spring:
   profiles: default
   cloud:
     gateway:
-#<<< API Gateway / Routes
       routes:
         - id: usermanagement
           uri: http://localhost:8082
           predicates:
-            - Path=/users/**, 
+            - Path=/auth/**, 
         - id: codeassistant
           uri: http://localhost:8083
           predicates:
@@ -34,11 +37,13 @@ spring:
           predicates:
             - Path=/notifications/**, 
         - id: board
-          uri: http://localhost:8088
+          uri: http://localhost:8089
           predicates:
-            - Path=/posts/**, /attachments/**, /comments/**, 
+            - Path=/posts/**,/attachments/**,/comments/**
+          filters:
+            - JwtAuth
         - id: frontend
-          uri: http://localhost:8080
+          uri: http://localhost:3000
           predicates:
             - Path=/**
 #>>> API Gateway / Routes
@@ -52,7 +57,12 @@ spring:
             allowedHeaders:
               - "*"
             allowCredentials: true
-
+logging:
+  level:
+    multiagentbaseddevelopersupportsystem: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: DEBUG
+    root: INFO
 
 ---
 
