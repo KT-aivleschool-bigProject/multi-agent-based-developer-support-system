@@ -23,24 +23,14 @@ public class PostController {
 
     private final PostService postService;
 
-    @PostMapping("/startpostwriting")
-    public ResponseEntity<Post> startPostWriting() {
-        Post post = postService.startPostWriting();
-        return ResponseEntity.ok(post);
+    @PostMapping("/init")
+    public ResponseEntity<Long> startPostWriting(@RequestHeader("X-User-Id") Long userId) {
+        Post post = postService.startPostWriting(userId);
+        return ResponseEntity.ok(post.getPostId());
     }   
 
-    @RequestMapping(
-        value = "/{id}/savepost",
-        method = RequestMethod.PUT,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Post savePost(
-        @PathVariable(value = "id") Long id,
-        @RequestBody SavePostCommand savePostCommand,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /post/savePost  called #####");
+    @PatchMapping("/{id}/savepost")
+    public Post savePost(@PathVariable(value = "id") Long id, @RequestBody SavePostCommand savePostCommand) throws Exception {
         Optional<Post> optionalPost = postRepository.findById(id);
 
         optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
@@ -51,67 +41,67 @@ public class PostController {
         return post;
     }
 
-    @RequestMapping(
-        value = "/{id}/deletepost",
-        method = RequestMethod.DELETE,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Post deletePost(
-        @PathVariable(value = "id") Long id,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /post/deletePost  called #####");
-        Optional<Post> optionalPost = postRepository.findById(id);
+    // @RequestMapping(
+    //     value = "/{id}/deletepost",
+    //     method = RequestMethod.DELETE,
+    //     produces = "application/json;charset=UTF-8"
+    // )
+    // public Post deletePost(
+    //     @PathVariable(value = "id") Long id,
+    //     HttpServletRequest request,
+    //     HttpServletResponse response
+    // ) throws Exception {
+    //     System.out.println("##### /post/deletePost  called #####");
+    //     Optional<Post> optionalPost = postRepository.findById(id);
 
-        optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
-        Post post = optionalPost.get();
-        post.deletePost();
+    //     optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
+    //     Post post = optionalPost.get();
+    //     post.deletePost();
 
-        postRepository.delete(post);
-        return post;
-    }
+    //     postRepository.delete(post);
+    //     return post;
+    // }
 
-    @RequestMapping(
-        value = "/{id}/increaseviewcount",
-        method = RequestMethod.PUT,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Post increaseViewCount(
-        @PathVariable(value = "id") Long id,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /post/increaseViewCount  called #####");
-        Optional<Post> optionalPost = postRepository.findById(id);
+    // @RequestMapping(
+    //     value = "/{id}/increaseviewcount",
+    //     method = RequestMethod.PUT,
+    //     produces = "application/json;charset=UTF-8"
+    // )
+    // public Post increaseViewCount(
+    //     @PathVariable(value = "id") Long id,
+    //     HttpServletRequest request,
+    //     HttpServletResponse response
+    // ) throws Exception {
+    //     System.out.println("##### /post/increaseViewCount  called #####");
+    //     Optional<Post> optionalPost = postRepository.findById(id);
 
-        optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
-        Post post = optionalPost.get();
-        post.increaseViewCount();
+    //     optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
+    //     Post post = optionalPost.get();
+    //     post.increaseViewCount();
 
-        postRepository.save(post);
-        return post;
-    }
+    //     postRepository.save(post);
+    //     return post;
+    // }
 
-    @RequestMapping(
-        value = "/{id}/editpost",
-        method = RequestMethod.PUT,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Post editPost(
-        @PathVariable(value = "id") Long id,
-        @RequestBody EditPostCommand editPostCommand,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /post/editPost  called #####");
-        Optional<Post> optionalPost = postRepository.findById(id);
+    // @RequestMapping(
+    //     value = "/{id}/editpost",
+    //     method = RequestMethod.PUT,
+    //     produces = "application/json;charset=UTF-8"
+    // )
+    // public Post editPost(
+    //     @PathVariable(value = "id") Long id,
+    //     @RequestBody EditPostCommand editPostCommand,
+    //     HttpServletRequest request,
+    //     HttpServletResponse response
+    // ) throws Exception {
+    //     System.out.println("##### /post/editPost  called #####");
+    //     Optional<Post> optionalPost = postRepository.findById(id);
 
-        optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
-        Post post = optionalPost.get();
-        post.editPost(editPostCommand);
+    //     optionalPost.orElseThrow(() -> new Exception("No Entity Found"));
+    //     Post post = optionalPost.get();
+    //     post.editPost(editPostCommand);
 
-        postRepository.save(post);
-        return post;
-    }
+    //     postRepository.save(post);
+    //     return post;
+    // }
 }

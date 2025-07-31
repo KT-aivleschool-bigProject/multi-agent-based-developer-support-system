@@ -18,5 +18,9 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
 nvm install 14.19.0 && nvm use 14.19.0
 export NODE_OPTIONS=--openssl-legacy-provider
 
+# Redis 컨테이너 정리 후 실행
+docker rm -f redis 2>/dev/null || true
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+
 cd infra
 docker-compose up

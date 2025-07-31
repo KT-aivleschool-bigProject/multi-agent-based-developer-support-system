@@ -45,13 +45,16 @@ logging:
     org.hibernate.type: trace
     org.springframework.cloud: debug
 
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
 api:
   url: 
-    board: localhost:8088 
+    board: localhost:8089 
     
 
 server:
-  port: 8088
+  port: 8089
 
 ---
 
@@ -87,6 +90,6 @@ spring:
 
 api:
   url: 
-    board: board:8080 
+    board: board:8089 
     
 
