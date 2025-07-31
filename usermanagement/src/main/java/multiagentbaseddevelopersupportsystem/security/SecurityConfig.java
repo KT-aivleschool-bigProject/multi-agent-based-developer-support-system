@@ -38,8 +38,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .addFilterBefore(new JwtTokenFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
                 .authorizeRequests()
-                .antMatchers("/auth/**").permitAll()
-                .antMatchers("/question/*").authenticated()
+                .antMatchers("/auth/signup", "/auth/login", "/auth/reissue").permitAll()
+                .antMatchers("/auth/logout").authenticated()
                 .anyRequest().permitAll();
         http
                 .exceptionHandling()
@@ -55,7 +55,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     }
                 });
-
+        
         http.headers().frameOptions().disable();
     }
 
