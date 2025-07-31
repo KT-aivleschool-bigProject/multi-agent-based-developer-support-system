@@ -1,10 +1,12 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
-import multiagentbaseddevelopersupportsystem.domain.*;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import java.util.List;
 
-//<<< PoEAA / Repository
-@RepositoryRestResource(collectionResourceRel = "comments", path = "comments")
-public interface CommentRepository
-    extends PagingAndSortingRepository<Comment, Long> {}
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CommentRepository extends JpaRepository<Comment, Long> {
+    List<Comment> findByPostId(Long postId);
+    List<Comment> findByUserIdAndPostId(Long userId, Long postId);
+}

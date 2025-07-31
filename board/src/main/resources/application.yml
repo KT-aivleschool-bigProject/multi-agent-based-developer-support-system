@@ -4,6 +4,17 @@ server:
 spring:
   application:
     name: board
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+      enabled: true
+  
+  # 파일 저장 경로 설정
+file:
+  upload:
+    path: /workspaces/multi-agent-based-developer-support-system/board/uploads/
+
 ---
 
 spring:
@@ -30,14 +41,10 @@ spring:
       bindings:
         event-in:
           group: board
-#<<< EDA / Topic Name
           destination: multiagentbaseddevelopersupportsystem
-#>>> EDA / Topic Name
           contentType: application/json
         event-out:
-#<<< EDA / Topic Name
           destination: multiagentbaseddevelopersupportsystem
-#>>> EDA / Topic Name
           contentType: application/json
 
 logging:

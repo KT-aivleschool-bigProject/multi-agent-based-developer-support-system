@@ -1,83 +1,54 @@
 package multiagentbaseddevelopersupportsystem.infra;
 
-import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
-import multiagentbaseddevelopersupportsystem.domain.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
-//<<< Clean Arch / Inbound Adaptor
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
+import multiagentbaseddevelopersupportsystem.domain.Comment;
+import multiagentbaseddevelopersupportsystem.domain.EditCommentCommand;
+import multiagentbaseddevelopersupportsystem.domain.WriteCommentCommand;
+import multiagentbaseddevelopersupportsystem.service.CommentService;
 
 @RestController
-// @RequestMapping(value="/comments")
-@Transactional
+@RequestMapping("/comments")
+@RequiredArgsConstructor
 public class CommentController {
 
-    @Autowired
-    CommentRepository commentRepository;
+    private final CommentService commentService;
 
-    @RequestMapping(
-        value = "/comments/writecomment",
-        method = RequestMethod.POST,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Comment writeComment(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        @RequestBody WriteCommentCommand writeCommentCommand
-    ) throws Exception {
-        System.out.println("##### /comment/writeComment  called #####");
-        Comment comment = new Comment();
-        comment.writeComment(writeCommentCommand);
-        commentRepository.save(comment);
-        return comment;
+    @PostMapping
+    public ResponseEntity<Comment> writeComment(
+            @RequestBody WriteCommentCommand writeCommentCommand,
+            @RequestHeader("X-User-Id") Long userId) {
+        
+        Comment comment = commentService.writeComment(writeCommentCommand, userId);
+        return ResponseEntity.ok(comment);
     }
 
-    @RequestMapping(
-        value = "/comments/{id}/editcomment",
-        method = RequestMethod.PUT,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Comment editComment(
-        @PathVariable(value = "id") Long id,
-        @RequestBody EditCommentCommand editCommentCommand,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /comment/editComment  called #####");
-        Optional<Comment> optionalComment = commentRepository.findById(id);
-
-        optionalComment.orElseThrow(() -> new Exception("No Entity Found"));
-        Comment comment = optionalComment.get();
-        comment.editComment(editCommentCommand);
-
-        commentRepository.save(comment);
-        return comment;
+    @PutMapping("/{commentId}")
+    public ResponseEntity<Comment> editComment(
+            @PathVariable Long commentId,
+            @RequestBody EditCommentCommand editCommentCommand,
+            @RequestHeader("X-User-Id") Long userId) {
+        
+        Comment comment = commentService.editComment(commentId, editCommentCommand, userId);
+        return ResponseEntity.ok(comment);
     }
 
-    @RequestMapping(
-        value = "/comments/{id}/deletecomment",
-        method = RequestMethod.DELETE,
-        produces = "application/json;charset=UTF-8"
-    )
-    public Comment deleteComment(
-        @PathVariable(value = "id") Long id,
-        HttpServletRequest request,
-        HttpServletResponse response
-    ) throws Exception {
-        System.out.println("##### /comment/deleteComment  called #####");
-        Optional<Comment> optionalComment = commentRepository.findById(id);
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable Long commentId,
+            @RequestHeader("X-User-Id") Long userId) {
+        
+        commentService.deleteComment(commentId, userId);
+        return ResponseEntity.ok().build();
+    }
 
-        optionalComment.orElseThrow(() -> new Exception("No Entity Found"));
-        Comment comment = optionalComment.get();
-        comment.deleteComment();
-
-        commentRepository.delete(comment);
-        return comment;
+    @GetMapping("/post/{postId}")
+    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable Long postId) {
+        List<Comment> comments = commentService.getCommentsByPostId(postId);
+        return ResponseEntity.ok(comments);
     }
 }
-//>>> Clean Arch / Inbound Adaptor

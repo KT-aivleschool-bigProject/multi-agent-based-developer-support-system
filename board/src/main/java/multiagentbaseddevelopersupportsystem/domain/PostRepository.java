@@ -1,10 +1,11 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
-import multiagentbaseddevelopersupportsystem.domain.*;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-//<<< PoEAA / Repository
-@RepositoryRestResource(collectionResourceRel = "posts", path = "posts")
-public interface PostRepository
-    extends PagingAndSortingRepository<Post, Long> {}
+@Repository
+public interface PostRepository extends JpaRepository<Post, Long> {
+    Page<Post> findByTitleContaining(String searchKeyword, Pageable pageable);
+}
