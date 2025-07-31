@@ -1,19 +1,20 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDate;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import javax.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import multiagentbaseddevelopersupportsystem.BoardApplication;
 
 @Entity
 @Table(name = "Comment_table")
 @Data
-//<<< DDD / Aggregate Root
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Comment {
 
     @Id
@@ -22,8 +23,10 @@ public class Comment {
 
     private String content;
 
+    @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
+    @Temporal(TemporalType.TIMESTAMP)
     private Date updatedAt;
 
     private Long postId;
@@ -37,52 +40,25 @@ public class Comment {
         return commentRepository;
     }
 
-    //<<< Clean Arch / Port Method
     public void writeComment(WriteCommentCommand writeCommentCommand) {
-        //implement business logic here:
-
+        this.content = writeCommentCommand.getContent();
+        this.postId = writeCommentCommand.getPostId();
+        this.createdAt = new Date();
     }
 
-    //>>> Clean Arch / Port Method
-    //<<< Clean Arch / Port Method
     public void editComment(EditCommentCommand editCommentCommand) {
-        //implement business logic here:
-
+        this.content = editCommentCommand.getContent();
+        this.updatedAt = new Date();
     }
 
-    //>>> Clean Arch / Port Method
-    //<<< Clean Arch / Port Method
     public void deleteComment() {
-        //implement business logic here:
-
+        // 삭제 로직은 repository에서 처리
     }
 
-    //>>> Clean Arch / Port Method
-
-    //<<< Clean Arch / Port Method
     public static void deleteCommentIncludedPost(PostDeleted postDeleted) {
-        //implement business logic here:
-
-        /** Example 1:  new item 
-        Comment comment = new Comment();
-        repository().save(comment);
-
-        */
-
-        /** Example 2:  finding and process
-        
-
-        repository().findById(postDeleted.get???()).ifPresent(comment->{
-            
-            comment // do something
-            repository().save(comment);
-
-
-         });
-        */
-
+        repository().findByPostId(postDeleted.getPostId()).forEach(comment -> {
+            repository().delete(comment);
+        });
     }
-    //>>> Clean Arch / Port Method
-
 }
-//>>> DDD / Aggregate Root
+

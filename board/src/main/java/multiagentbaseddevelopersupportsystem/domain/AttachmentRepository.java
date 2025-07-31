@@ -1,13 +1,12 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
-import multiagentbaseddevelopersupportsystem.domain.*;
-import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import java.util.List;
 
-//<<< PoEAA / Repository
-@RepositoryRestResource(
-    collectionResourceRel = "attachments",
-    path = "attachments"
-)
-public interface AttachmentRepository
-    extends PagingAndSortingRepository<Attachment, Long> {}
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
+
+    List<Attachment> findByPostId(Long postId);
+}
