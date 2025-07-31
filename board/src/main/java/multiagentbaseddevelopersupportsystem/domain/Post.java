@@ -2,100 +2,111 @@ package multiagentbaseddevelopersupportsystem.domain;
 
 import multiagentbaseddevelopersupportsystem.BoardApplication;
 import javax.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.Date;
 import java.time.LocalDate;
 import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 
-
 @Entity
-@Table(name="Post_table")
 @Data
-
-//<<< DDD / Aggregate Root
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name="Post_table")
 public class Post  {
 
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Long postId;    
     
+    @Column(name="title", nullable=false, length = 200)
+    private String title;    
     
+    @Lob
+    @Column(name="content", nullable=false)
+    private String content;    
     
-private Long postId;    
-    
-    
-private String title;    
-    
-    
-private String content;    
-    
-    
-private Integer viewCount;    
-    
-    
-private Date createdAt;    
-    
-    
-private Date updatedAt;    
-    
-    
-private Long userId;
+    @Column(name="view_count", nullable=false)
+    private Integer viewCount;    
 
+    @Column(name="created_at")
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date createdAt;    
 
-    public static PostRepository repository(){
-        PostRepository postRepository = BoardApplication.applicationContext.getBean(PostRepository.class);
-        return postRepository;
-    }
+    @UpdateTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name="updated_at")
+    private Date updatedAt;    
+    
+    @Column(name="user_id", nullable=false)
+    private Long userId;
 
+    // public static PostRepository repository(){
+    //     PostRepository postRepository = BoardApplication.applicationContext.getBean(PostRepository.class);
+    //     return postRepository;
+    // }
 
+    // public static Post startPostWriting(Long userId) {
+    //     Post post = Post.builder()
+    //         .userId(userId)
+    //         .build();
 
-//<<< Clean Arch / Port Method
-    public void savePost(SavePostCommand savePostCommand){
+    //     return repository().save(post);  // save() 후 postId가 자동 생성됨
+    // }
+
+    // public void savePost(SavePostCommand savePostCommand){
         
-        //implement business logic here:
-        
-
-        multiagentbaseddevelopersupportsystem.external.PostQuery postQuery = new multiagentbaseddevelopersupportsystem.external.PostQuery();
-        // postQuery.set??()        
-          = PostApplication.applicationContext
-            .getBean(multiagentbaseddevelopersupportsystem.external.Service.class)
-            .post(postQuery);
-
-    }
-//>>> Clean Arch / Port Method
-//<<< Clean Arch / Port Method
-    public void deletePost(){
-        
-        //implement business logic here:
+    //     //implement business logic here:
         
 
+    //     multiagentbaseddevelopersupportsystem.external.PostQuery postQuery = new multiagentbaseddevelopersupportsystem.external.PostQuery();
+    //     // postQuery.set??()        
+    //       = PostApplication.applicationContext
+    //         .getBean(multiagentbaseddevelopersupportsystem.external.Service.class)
+    //         .post(postQuery);
 
-        PostDeleted postDeleted = new PostDeleted(this);
-        postDeleted.publishAfterCommit();
-    }
-//>>> Clean Arch / Port Method
-//<<< Clean Arch / Port Method
-    public void increaseViewCount(){
+    // }
+
+    // public void deletePost(){
         
-        //implement business logic here:
+    //     //implement business logic here:
         
 
 
-    }
-//>>> Clean Arch / Port Method
-//<<< Clean Arch / Port Method
-    public void editPost(EditPostCommand editPostCommand){
+    //     PostDeleted postDeleted = new PostDeleted(this);
+    //     postDeleted.publishAfterCommit();
+    // }
+
+    // public void increaseViewCount(){
         
-        //implement business logic here:
+    //     //implement business logic here:
         
 
 
-    }
-//>>> Clean Arch / Port Method
+    // }
+
+    // public void editPost(EditPostCommand editPostCommand){
+        
+    //     //implement business logic here:
+        
+
+
+    // }
+
 
 
 
 }
-//>>> DDD / Aggregate Root
+
