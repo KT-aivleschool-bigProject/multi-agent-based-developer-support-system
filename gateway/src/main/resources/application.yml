@@ -15,7 +15,7 @@ spring:
         - id: usermanagement
           uri: http://localhost:8082
           predicates:
-            - Path=/auth/**, 
+            - Path=/auth/**,/users/**
         - id: codeassistant
           uri: http://localhost:8083
           predicates:
@@ -36,10 +36,22 @@ spring:
           uri: http://localhost:8087
           predicates:
             - Path=/notifications/**, 
-        - id: board
-          uri: http://localhost:8089
+        - id: post
+          uri: http://localhost:8090
           predicates:
-            - Path=/posts/**,/attachments/**,/comments/**
+            - Path=/posts/**
+          filters:
+            - JwtAuth
+        - id: attachment
+          uri: http://localhost:8091
+          predicates:
+            - Path=/attachments/**
+          filters:
+            - JwtAuth
+        - id: comment
+          uri: http://localhost:8092
+          predicates:
+            - Path=/comments/**
           filters:
             - JwtAuth
         - id: frontend
