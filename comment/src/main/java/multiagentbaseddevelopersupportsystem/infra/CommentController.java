@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Comment;
+import multiagentbaseddevelopersupportsystem.domain.CommentResponseDto;
 import multiagentbaseddevelopersupportsystem.domain.EditCommentCommand;
 import multiagentbaseddevelopersupportsystem.domain.WriteCommentCommand;
 import multiagentbaseddevelopersupportsystem.service.CommentService;
@@ -19,22 +20,22 @@ public class CommentController {
     private final CommentService commentService;
 
     @PostMapping
-    public ResponseEntity<Comment> writeComment(
+    public ResponseEntity<Long> writeComment(
             @RequestBody WriteCommentCommand writeCommentCommand,
             @RequestHeader("X-User-Id") Long userId) {
-        
-        Comment comment = commentService.writeComment(writeCommentCommand, userId);
-        return ResponseEntity.ok(comment);
+                
+        Long id = commentService.writeComment(writeCommentCommand, userId);
+        return ResponseEntity.status(201).body(id);
     }
 
     @PutMapping("/{commentId}")
-    public ResponseEntity<Comment> editComment(
+    public ResponseEntity<Long> editComment(
             @PathVariable Long commentId,
             @RequestBody EditCommentCommand editCommentCommand,
             @RequestHeader("X-User-Id") Long userId) {
-        
-        Comment comment = commentService.editComment(commentId, editCommentCommand, userId);
-        return ResponseEntity.ok(comment);
+
+        Long id = commentService.editComment(commentId, editCommentCommand, userId);
+        return ResponseEntity.ok(id);
     }
 
     @DeleteMapping("/{commentId}")
@@ -47,8 +48,8 @@ public class CommentController {
     }
 
     @GetMapping("/post/{postId}")
-    public ResponseEntity<List<Comment>> getCommentsByPostId(@PathVariable Long postId) {
-        List<Comment> comments = commentService.getCommentsByPostId(postId);
-        return ResponseEntity.ok(comments);
+    public ResponseEntity<List<CommentResponseDto>> getCommentsByPostId(@PathVariable Long postId) {
+
+        return ResponseEntity.ok(commentService.getCommentsByPostId(postId));
     }
 }

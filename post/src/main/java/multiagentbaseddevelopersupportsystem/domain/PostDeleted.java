@@ -6,7 +6,6 @@ import lombok.*;
 import multiagentbaseddevelopersupportsystem.domain.*;
 import multiagentbaseddevelopersupportsystem.infra.AbstractEvent;
 
-//<<< DDD / Domain Event
 @Data
 @ToString
 public class PostDeleted extends AbstractEvent {
@@ -21,4 +20,3 @@ public class PostDeleted extends AbstractEvent {
         super();
     }
 }
-//>>> DDD / Domain Event

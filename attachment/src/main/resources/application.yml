@@ -13,18 +13,26 @@ spring:
   # 파일 저장 경로 설정
 file:
   upload:
-    path: /workspaces/multi-agent-based-developer-support-system/board/uploads/
+    path: /workspaces/multi-agent-based-developer-support-system/attachment/uploads/
 
 ---
 
 spring:
   profiles: default
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   jpa:
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-        implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    
   cloud:
     stream:
       kafka:
@@ -46,6 +54,12 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+  api-docs:
+    path: /v3/api-docs
 
 logging:
   level:
