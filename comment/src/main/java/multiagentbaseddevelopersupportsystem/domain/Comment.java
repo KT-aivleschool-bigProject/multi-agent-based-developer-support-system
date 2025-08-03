@@ -3,6 +3,10 @@ package multiagentbaseddevelopersupportsystem.domain;
 import java.util.Date;
 import java.util.List;
 import javax.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +15,8 @@ import multiagentbaseddevelopersupportsystem.CommentApplication;
 
 @Entity
 @Table(name = "Comment_table")
-@Data
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comment {
@@ -21,16 +25,23 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long commentId;
 
+    @Column(name="content", nullable=false, length=500)
     private String content;
 
+    @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name="created_at", nullable=false)
     private Date createdAt;
 
+    @UpdateTimestamp
     @Temporal(TemporalType.TIMESTAMP)
+    @Column(name="updated_at", nullable=false)
     private Date updatedAt;
 
+    @Column(name="post_id", nullable=false)
     private Long postId;
 
+    @Column(name="user_id", nullable=false)
     private Long userId;
 
     public static CommentRepository repository() {
@@ -38,21 +49,6 @@ public class Comment {
             CommentRepository.class
         );
         return commentRepository;
-    }
-
-    public void writeComment(WriteCommentCommand writeCommentCommand) {
-        this.content = writeCommentCommand.getContent();
-        this.postId = writeCommentCommand.getPostId();
-        this.createdAt = new Date();
-    }
-
-    public void editComment(EditCommentCommand editCommentCommand) {
-        this.content = editCommentCommand.getContent();
-        this.updatedAt = new Date();
-    }
-
-    public void deleteComment() {
-        // 삭제 로직은 repository에서 처리
     }
 
     public static void deleteCommentIncludedPost(PostDeleted postDeleted) {

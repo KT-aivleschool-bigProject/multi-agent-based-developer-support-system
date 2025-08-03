@@ -57,15 +57,6 @@ public class PostService {
         Post post = postRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("No Entity Found"));
         
-        // 관련 파일들 삭제
-        // fileUploadService.getFilesByPostId(id).forEach(attachment -> {
-        //     try {
-        //         fileUploadService.deleteFile(attachment.getFileId());
-        //     } catch (Exception e) {
-        //         // 로그 처리
-        //     }
-        // });
-        
         postRepository.delete(post);
         
         // PostDeleted 이벤트 발행 (댓글 자동 삭제)

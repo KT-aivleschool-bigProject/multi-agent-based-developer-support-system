@@ -3,6 +3,8 @@ package multiagentbaseddevelopersupportsystem.domain;
 import java.util.Date;
 import javax.persistence.*;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,16 +26,22 @@ public class Attachment {
     @Column(name="post_id", nullable=false)
     private Long postId;
     
+    @Column(name="original_name", nullable=false)
     private String originalName;
 
+    @Column(name="stored_name", nullable=false)
     private String storedName;
 
+    @Column(name="file_url", nullable=false)
     private String fileUrl;
 
+    @Column(name="file_size", nullable=false)
     private Long fileSize;
 
+    @Column(name="file_type", nullable=false)
     private String fileType;
 
+    @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 

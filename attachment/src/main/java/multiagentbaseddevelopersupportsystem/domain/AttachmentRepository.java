@@ -7,6 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
-
     List<Attachment> findByPostId(Long postId);
 }

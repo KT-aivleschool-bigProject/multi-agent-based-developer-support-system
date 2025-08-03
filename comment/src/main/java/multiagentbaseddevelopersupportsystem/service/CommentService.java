@@ -10,8 +10,11 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Comment;
 import multiagentbaseddevelopersupportsystem.domain.CommentRepository;
+import multiagentbaseddevelopersupportsystem.domain.CommentResponseDto;
 import multiagentbaseddevelopersupportsystem.domain.EditCommentCommand;
+import multiagentbaseddevelopersupportsystem.domain.UserDto;
 import multiagentbaseddevelopersupportsystem.domain.WriteCommentCommand;
+import multiagentbaseddevelopersupportsystem.external.UserClient;
 
 @Service
 @Transactional
@@ -19,19 +22,19 @@ import multiagentbaseddevelopersupportsystem.domain.WriteCommentCommand;
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final UserClient userClient;
 
-    public Comment writeComment(WriteCommentCommand writeCommentCommand, Long userId) {
+    public Long writeComment(WriteCommentCommand writeCommentCommand, Long userId) {
         Comment comment = Comment.builder()
                 .content(writeCommentCommand.getContent())
                 .postId(writeCommentCommand.getPostId())
                 .userId(userId)
-                .createdAt(new Date())
                 .build();
 
-        return commentRepository.save(comment);
+        return commentRepository.save(comment).getCommentId();
     }
 
-    public Comment editComment(Long commentId, EditCommentCommand editCommentCommand, Long userId) {
+    public Long editComment(Long commentId, EditCommentCommand editCommentCommand, Long userId) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new RuntimeException("댓글을 찾을 수 없습니다."));
 
@@ -40,9 +43,8 @@ public class CommentService {
         }
 
         comment.setContent(editCommentCommand.getContent());
-        comment.setUpdatedAt(new Date());
 
-        return commentRepository.save(comment);
+        return commentRepository.save(comment).getCommentId();
     }
 
     public void deleteComment(Long commentId, Long userId) {
@@ -56,7 +58,23 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    public List<Comment> getCommentsByPostId(Long postId) {
-        return commentRepository.findByPostId(postId);
+    public List<CommentResponseDto> getCommentsByPostId(Long postId) {
+        List<Comment> comments = commentRepository.findByPostId(postId);
+
+        return comments.stream()
+                .map(comment -> {
+                    // UserClient를 통해 사용자 정보 조회
+                    UserDto user = userClient.getUserById(comment.getUserId());
+                    
+                    return CommentResponseDto.builder()
+                            .commentId(comment.getCommentId())
+                            .content(comment.getContent())
+                            .createdAt(comment.getCreatedAt())
+                            .updatedAt(comment.getUpdatedAt())
+                            .postId(comment.getPostId())
+                            .userName(user.getName()) // 실제 userName 설정
+                            .build();
+                })
+                .toList();
     }
 }

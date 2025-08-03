@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 
-
 @RestController
 @RequestMapping(value="/posts")
 @RequiredArgsConstructor
@@ -51,7 +50,7 @@ public class PostController {
     }
 
     @GetMapping("/list")
-    public ResponseEntity<Page<Post>> getPostList(@PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+    public ResponseEntity<Page<Post>> getPostList(@PageableDefault(page = 0, size = 10, sort = "postId", direction = Sort.Direction.DESC) Pageable pageable,
                                                     @RequestParam(required = false) String searchKeyword) {
         Page<Post> list = null;
         
