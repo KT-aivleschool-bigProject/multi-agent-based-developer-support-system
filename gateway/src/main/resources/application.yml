@@ -4,7 +4,7 @@ server:
 jwt:
   header: Authorization
   headerPrefix: Bearer
-  secret: ${SECRET_KEY}
+  secret: ${JWT_SECRET_KEY}
 ---
 
 spring:
@@ -128,4 +128,5 @@ spring:
 
 server:
   port: 8080
+
 
