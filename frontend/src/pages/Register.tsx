@@ -98,7 +98,7 @@ const Register = () => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="홍길동"
+                placeholder="이름을 입력해주세요"
                 required
                 disabled={isLoading}
                 maxLength={50}
@@ -111,7 +111,7 @@ const Register = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@company.com"
+                placeholder="이메일을 입력해주세요"
                 required
                 disabled={isLoading}
               />
@@ -140,7 +140,6 @@ const Register = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
                 required
                 disabled={isLoading}
                 minLength={8}
@@ -157,7 +156,6 @@ const Register = () => {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
                 required
                 disabled={isLoading}
                 minLength={8}

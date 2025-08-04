@@ -68,3 +68,48 @@ All colors MUST be HSL.
 .gradient-border {
   background: linear-gradient(135deg, hsl(263 70% 50%), hsl(220 70% 50%));
 }
+
+/* FullCalendar 버튼 커스터마이징 */
+.fullcalendar-wrapper .fc-button {
+  background-color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease-in-out !important;
+  box-shadow: none !important;
+  font-family: inherit !important;
+}
+
+.fullcalendar-wrapper .fc-button:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+  border-color: hsl(var(--primary) / 0.9) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fullcalendar-wrapper .fc-button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fullcalendar-wrapper .fc-button:disabled {
+  background-color: hsl(var(--muted)) !important;
+  border-color: hsl(var(--muted)) !important;
+  color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.5 !important;
+  transform: none !important;
+}
+
+.fullcalendar-wrapper .fc-today-button {
+  background-color: hsl(var(--secondary)) !important;
+  border-color: hsl(var(--secondary)) !important;
+  color: hsl(var(--secondary-foreground)) !important;
+}
+
+.fullcalendar-wrapper .fc-today-button:hover {
+  background-color: hsl(var(--secondary) / 0.8) !important;
+  border-color: hsl(var(--secondary) / 0.8) !important;
+}
