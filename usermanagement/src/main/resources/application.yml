@@ -8,7 +8,7 @@ spring:
 jwt:
   header: Authorization
   headerPrefix: Bearer
-  secret: veZ5G32aFHWI1JXOkbFwFEZN5wL5gKX7pjTSXdQQPlbdiW3F8E2jznnF0PtiBh4b24eVz2au85PN+1yROAM3+A==
+  secret: ${SECRET_KEY}
   expiration: 3600000
 
 app:
@@ -122,5 +122,6 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+
 
 
