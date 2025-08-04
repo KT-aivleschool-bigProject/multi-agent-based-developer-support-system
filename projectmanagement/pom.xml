@@ -71,6 +71,19 @@
 			<scope>test</scope>
 		</dependency>
 
+				<!-- Azure Storage SDK -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
+			<version>12.16.0</version>
+		</dependency>
+		
+		<!-- Spring Boot Web for file upload -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
 		<!-- cucumber test -->
 		<dependency>
 			<groupId>io.cucumber</groupId>
@@ -89,6 +102,11 @@
 			<artifactId>cucumber-spring</artifactId>
 			<version>${cucumber.version}</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
 		</dependency>
 	</dependencies>
 
