@@ -13,7 +13,10 @@ import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Post;
 import multiagentbaseddevelopersupportsystem.domain.PostDeleted;
 import multiagentbaseddevelopersupportsystem.domain.PostRepository;
+import multiagentbaseddevelopersupportsystem.domain.PostResponseDto;
 import multiagentbaseddevelopersupportsystem.domain.SavePostCommand;
+import multiagentbaseddevelopersupportsystem.domain.UserDto;
+import multiagentbaseddevelopersupportsystem.external.UserClient;
 
 @Service
 @Transactional
@@ -21,8 +24,9 @@ import multiagentbaseddevelopersupportsystem.domain.SavePostCommand;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final UserClient userClient;
 
-    public Post startPostWriting(Long userId) {
+    public Long startPostWriting(Long userId) {
         Post post = Post.builder()
             .title("")
             .content("")
@@ -30,10 +34,10 @@ public class PostService {
             .userId(userId)
             .build();
 
-        return postRepository.save(post);
+        return postRepository.save(post).getPostId();
     }
 
-    public Post savePost(Long postId, SavePostCommand savePostCommand) {
+    public Long savePost(Long postId, SavePostCommand savePostCommand) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("No Entity Found"));
         if(post.getCreatedAt() == null) {
@@ -42,7 +46,7 @@ public class PostService {
         post.setTitle(savePostCommand.getTitle());
         post.setContent(savePostCommand.getContent());
 
-        return postRepository.save(post);
+        return postRepository.save(post).getPostId();
     }
 
     public void checkBeforeEditing(Long userId, Long postId) {
@@ -64,23 +68,23 @@ public class PostService {
         postDeleted.publishAfterCommit();
     }
 
-	public Post getPost(Long id) {
+	public PostResponseDto getPost(Long id) {
 		Post post = postRepository.findById(id)
 			.orElseThrow(() -> new RuntimeException("No Entity Found"));
 		post.setViewCount(post.getViewCount() + 1);
-		postRepository.save(post);
-        return post;
+
+        return postRepository.save(post).toDto();
 	}
 
-	public Page<Post> getPostList(Pageable pageable) {
-		return postRepository.findAll(pageable);
+	public Page<PostResponseDto> getPostList(Pageable pageable) {
+		Page<Post> postPage = postRepository.findAll(pageable);
+		return postPage.map(Post::toDto);
 	}
 
-    public Page<Post> getPostListByKeyword(String searchKeyword, Pageable pageable) {
+    public Page<PostResponseDto> getPostListByKeyword(String searchKeyword, Pageable pageable) {
         if (searchKeyword == null || searchKeyword.isEmpty()) {
-            return postRepository.findAll(pageable);
+            return postRepository.findAll(pageable).map(Post::toDto);
         }
-        return postRepository.findByTitleContaining(searchKeyword, pageable);
-
+        return postRepository.findByTitleContaining(searchKeyword, pageable).map(Post::toDto);
     }
 }
