@@ -12,11 +12,11 @@ import { toast } from '@/hooks/use-toast';
 import { Code2, Loader2 } from 'lucide-react';
 
 const Register = () => {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [jobRole, setJobRole] = useState('');
+  const [position, setPosition] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -33,6 +33,15 @@ const Register = () => {
       return;
     }
     
+    if (!name || !email || !password || !position) {
+      toast({
+        title: "입력 오류",
+        description: "모든 필수 항목을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (password !== confirmPassword) {
       toast({
         title: "비밀번호 불일치",
@@ -42,22 +51,22 @@ const Register = () => {
       return;
     }
     
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: "비밀번호 오류",
-        description: "비밀번호는 6자 이상이어야 합니다.",
+        description: "비밀번호는 8자 이상이어야 합니다.",
         variant: "destructive",
       });
       return;
     }
     
-    const success = await register(username, email, password, jobRole);
+    const success = await register(name, email, password, position);
     if (success) {
       toast({
         title: "회원가입 성공",
-        description: "환영합니다! 로그인되었습니다.",
+        description: "회원가입이 완료되었습니다. 로그인해주세요.",
       });
-      navigate('/dashboard');
+      navigate('/login');
     } else {
       toast({
         title: "회원가입 실패",
@@ -83,18 +92,20 @@ const Register = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">사용자명</Label>
+              <Label htmlFor="name">이름 *</Label>
               <Input
-                id="username"
+                id="name"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="developer123"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="홍길동"
                 required
+                disabled={isLoading}
+                maxLength={50}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">회사 이메일</Label>
+              <Label htmlFor="email">회사 이메일 *</Label>
               <Input
                 id="email"
                 type="email"
@@ -102,26 +113,28 @@ const Register = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@company.com"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="jobRole">직무 (선택사항)</Label>
-              <Select value={jobRole} onValueChange={setJobRole}>
+              <Label htmlFor="position">직책 *</Label>
+              <Select value={position} onValueChange={setPosition} disabled={isLoading}>
                 <SelectTrigger>
-                  <SelectValue placeholder="직무를 선택하세요" />
+                  <SelectValue placeholder="직책을 선택하세요" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="backend">백엔드 개발자</SelectItem>
-                  <SelectItem value="frontend">프론트엔드 개발자</SelectItem>
-                  <SelectItem value="fullstack">풀스택 개발자</SelectItem>
-                  <SelectItem value="designer">디자이너</SelectItem>
-                  <SelectItem value="devops">DevOps 엔지니어</SelectItem>
-                  <SelectItem value="pm">프로젝트 매니저</SelectItem>
+                  <SelectItem value="백엔드 개발자">백엔드 개발자</SelectItem>
+                  <SelectItem value="프론트엔드 개발자">프론트엔드 개발자</SelectItem>
+                  <SelectItem value="풀스택 개발자">풀스택 개발자</SelectItem>
+                  <SelectItem value="디자이너">디자이너</SelectItem>
+                  <SelectItem value="DevOps 엔지니어">DevOps 엔지니어</SelectItem>
+                  <SelectItem value="프로젝트 매니저">프로젝트 매니저</SelectItem>
+                  <SelectItem value="기타">기타</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
+              <Label htmlFor="password">비밀번호 *</Label>
               <Input
                 id="password"
                 type="password"
@@ -129,10 +142,16 @@ const Register = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
+                minLength={8}
+                maxLength={100}
               />
+              <p className="text-xs text-muted-foreground">
+                비밀번호는 8자 이상 100자 이하여야 합니다.
+              </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+              <Label htmlFor="confirmPassword">비밀번호 확인 *</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -140,6 +159,9 @@ const Register = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
+                minLength={8}
+                maxLength={100}
               />
             </div>
             
@@ -148,6 +170,7 @@ const Register = () => {
                 id="terms" 
                 checked={agreeToTerms}
                 onCheckedChange={(checked) => setAgreeToTerms(checked === true)}
+                disabled={isLoading}
               />
               <Label htmlFor="terms" className="text-sm">
                 <span className="text-muted-foreground">

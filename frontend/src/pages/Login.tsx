@@ -17,6 +17,24 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!email || !password) {
+      toast({
+        title: "입력 오류",
+        description: "이메일과 비밀번호를 모두 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 8) {
+      toast({
+        title: "비밀번호 오류",
+        description: "비밀번호는 8자 이상이어야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const success = await login(email, password);
     if (success) {
       toast({
@@ -57,6 +75,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@company.com"
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -68,6 +87,8 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={isLoading}
+                minLength={8}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -88,11 +109,6 @@ const Login = () => {
               <Link to="/register" className="text-primary hover:underline">
                 회원가입
               </Link>
-            </p>
-          </div>
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              테스트 계정: admin@example.com / admin123
             </p>
           </div>
         </CardContent>

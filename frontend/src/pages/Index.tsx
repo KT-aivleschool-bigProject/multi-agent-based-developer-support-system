@@ -60,7 +60,7 @@ const Index = () => {
         <main className="flex-1">
           <div className="container mx-auto px-4 py-12 text-center">
             <h1 className="text-4xl font-bold mb-4">
-              환영합니다, {user.username}님!
+              환영합니다, {user.name}님!
             </h1>
             <p className="text-xl text-muted-foreground mb-8">
               멀티 에이전트와 함께하는 개발자 협업 플랫폼

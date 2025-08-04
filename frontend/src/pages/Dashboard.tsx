@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { Activity, MessageSquare, Users, Code } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const stats = [
     {
@@ -60,11 +60,33 @@ const Dashboard = () => {
     { time: "16:00", title: "프로젝트 발표" },
   ];
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p>로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <p>인증되지 않은 사용자입니다.</p>
+          <p>isAuthenticated: {String(isAuthenticated)}</p>
+          <p>user: {user ? '있음' : '없음'}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          환영합니다, {user?.username}님!
+          환영합니다, {user.name}님!
         </h1>
         <p className="text-muted-foreground">
           오늘도 멋진 코드를 작성해보세요.

@@ -15,16 +15,24 @@ import { toast } from '@/hooks/use-toast';
 import { Code2, LogOut, Settings, User } from 'lucide-react';
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    toast({
-      title: "로그아웃 완료",
-      description: "안전하게 로그아웃되었습니다.",
-    });
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "로그아웃 완료",
+        description: "안전하게 로그아웃되었습니다.",
+      });
+      navigate('/login');
+    } catch (error) {
+      toast({
+        title: "로그아웃 오류",
+        description: "로그아웃 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -36,16 +44,16 @@ const Header = () => {
 
       <div className="flex items-center space-x-4">
 
-        {user ? (
+        {isAuthenticated && user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  {user.avatar && (
-                    <AvatarImage src={user.avatar} alt={user.username} />
+                  {user.profileImage && (
+                    <AvatarImage src={user.profileImage} alt={user.name} />
                   )}
                   <AvatarFallback className="bg-primary">
-                    {user.username[0].toUpperCase()}
+                    {user.name[0].toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -53,15 +61,13 @@ const Header = () => {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{user.username}</p>
+                  <p className="font-medium">{user.name}</p>
                   <p className="w-[200px] truncate text-sm text-muted-foreground">
                     {user.email}
                   </p>
-                  {user.provider && (
-                    <p className="text-xs text-muted-foreground capitalize">
-                      {user.provider} 계정
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {user.position}
+                  </p>
                 </div>
               </div>
               <DropdownMenuSeparator />
