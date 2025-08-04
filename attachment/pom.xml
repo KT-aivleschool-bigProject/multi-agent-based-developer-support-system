@@ -96,6 +96,18 @@
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.7.0</version> 
 		</dependency>
+		<!-- Azure Blob Storage -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>12.23.0</version>
+        </dependency>
+		<!-- Azure Spring Boot Starter -->
+        <dependency>
+            <groupId>com.azure.spring</groupId>
+            <artifactId>azure-spring-boot-starter-storage</artifactId>
+            <version>3.14.0</version>
+        </dependency>
 	</dependencies>
 
 	<dependencyManagement>
