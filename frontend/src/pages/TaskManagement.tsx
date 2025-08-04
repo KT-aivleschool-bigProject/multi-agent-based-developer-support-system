@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, CheckSquare, Clock, AlertCircle, User, Calendar } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Plus, Search, CheckSquare, Clock, AlertCircle, User, Calendar, FileText, Tag } from 'lucide-react';
 
 const TaskManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   const tasks = [
     {
@@ -105,6 +108,11 @@ const TaskManagement = () => {
     return filtered;
   };
 
+  const handleTaskDetail = (task: any) => {
+    setSelectedTask(task);
+    setIsDetailDialogOpen(true);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -175,7 +183,7 @@ const TaskManagement = () => {
                       </div>
                       <Badge variant="secondary">{task.project}</Badge>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleTaskDetail(task)}>
                       상세보기
                     </Button>
                   </div>
@@ -222,7 +230,7 @@ const TaskManagement = () => {
                       </div>
                       <Badge variant="secondary">{task.project}</Badge>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleTaskDetail(task)}>
                       상세보기
                     </Button>
                   </div>
@@ -269,7 +277,7 @@ const TaskManagement = () => {
                       </div>
                       <Badge variant="secondary">{task.project}</Badge>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleTaskDetail(task)}>
                       상세보기
                     </Button>
                   </div>
@@ -316,7 +324,7 @@ const TaskManagement = () => {
                       </div>
                       <Badge variant="secondary">{task.project}</Badge>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handleTaskDetail(task)}>
                       상세보기
                     </Button>
                   </div>
@@ -326,6 +334,107 @@ const TaskManagement = () => {
           })}
         </TabsContent>
       </Tabs>
+
+      {/* 업무 상세보기 Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedTask && (
+                <>
+                  {(() => {
+                    const StatusIcon = getStatusIcon(selectedTask.status);
+                    return <StatusIcon className="h-5 w-5" />;
+                  })()}
+                  {selectedTask.title}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              업무 상세 정보를 확인하고 관리하세요.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTask && (
+            <div className="space-y-6">
+              {/* 기본 정보 */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">설명</span>
+                </div>
+                <p className="text-sm text-muted-foreground pl-6">
+                  {selectedTask.description}
+                </p>
+              </div>
+
+              {/* 상태 및 우선순위 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">상태</span>
+                  </div>
+                  <Badge className={getStatusColor(selectedTask.status)}>
+                    {selectedTask.status}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">우선순위</span>
+                  </div>
+                  <Badge className={getPriorityColor(selectedTask.priority)}>
+                    {selectedTask.priority}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* 담당자 및 프로젝트 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">담당자</span>
+                  </div>
+                  <p className="text-sm pl-6">{selectedTask.assignee}</p>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">프로젝트</span>
+                  </div>
+                  <Badge variant="secondary" className="ml-6">
+                    {selectedTask.project}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* 마감일 */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">마감일</span>
+                </div>
+                <p className="text-sm pl-6">{selectedTask.dueDate}</p>
+              </div>
+
+              {/* 액션 버튼들 */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" size="sm">
+                  수정
+                </Button>
+                <Button variant="outline" size="sm">
+                  상태 변경
+                </Button>
+                <Button variant="outline" size="sm">
+                  담당자 변경
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

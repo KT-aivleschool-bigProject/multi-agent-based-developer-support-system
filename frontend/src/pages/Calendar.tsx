@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, Users, MapPin } from 'lucide-react';
 
 const Calendar = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
-
   const events = [
     {
       id: 1,
@@ -38,6 +38,17 @@ const Calendar = () => {
     },
   ];
 
+  // FullCalendar 이벤트 형식으로 변환
+  const fullCalendarEvents = events.map(event => ({
+    id: event.id.toString(),
+    title: event.title,
+    date: event.date,
+    backgroundColor: event.type === 'meeting' ? '#3b82f6' : 
+                    event.type === 'review' ? '#10b981' : '#8b5cf6',
+    borderColor: event.type === 'meeting' ? '#3b82f6' : 
+                event.type === 'review' ? '#10b981' : '#8b5cf6',
+  }));
+
   const upcomingEvents = events.filter(event => 
     new Date(event.date) >= new Date()
   );
@@ -64,20 +75,35 @@ const Calendar = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
+        <div className="lg:col-span-5">
           <Card>
-            <CardHeader>
-              <CardTitle>달력</CardTitle>
-              <CardDescription>날짜를 선택하여 일정을 확인하세요.</CardDescription>
-            </CardHeader>
             <CardContent>
-              <CalendarComponent
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border"
-              />
+              <div className="rounded-md border fullcalendar-wrapper">
+                <FullCalendar
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView="dayGridMonth"
+                  events={fullCalendarEvents}
+                  height="auto"
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: ''
+                  }}
+                  locale="ko"
+                  buttonText={{
+                    today: '오늘',
+                    prev: '이전',
+                    next: '다음'
+                  }}
+                  dateClick={(info) => {
+                    console.log('Selected date:', info.dateStr);
+                  }}
+                  eventClick={(info) => {
+                    console.log('Event clicked:', info.event.title);
+                  }}
+                />
+              </div>
               <Button className="w-full mt-4">
                 <Plus className="mr-2 h-4 w-4" />
                 새 일정 추가
@@ -86,7 +112,7 @@ const Calendar = () => {
           </Card>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>오늘의 일정</CardTitle>
