@@ -97,6 +97,12 @@ export const authAPI = {
 
 // 사용자 관련 API
 export const userAPI = {
+  // 사용자 정보 조회 (기존 UserController API 사용)
+  getUserById: async (userId: number) => {
+    const response = await api.get(`/users/${userId}`);
+    return response.data;
+  },
+
   // 사용자 정보 조회
   getProfile: async () => {
     const response = await api.get('/users/profile');
