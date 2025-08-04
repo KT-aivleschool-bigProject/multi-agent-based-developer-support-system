@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Github, User, Mail, Calendar, Briefcase, Trash2 } from 'lucide-react';
+import { Github, User, Mail, Briefcase, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +22,21 @@ const Profile = () => {
   const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    username: user?.username || '',
-    email: user?.email || '',
-    jobRole: user?.jobRole || '',
+    name: '',
+    email: '',
+    position: '',
   });
+
+  // 사용자 정보가 로드되면 폼 데이터 업데이트
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        position: user.position || '',
+      });
+    }
+  }, [user]);
 
   const handleSave = () => {
     toast({
@@ -50,6 +61,17 @@ const Profile = () => {
     });
   };
 
+  // 사용자 정보가 로드되지 않은 경우
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center">
+          <p>사용자 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
@@ -70,14 +92,14 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">사용자명</Label>
+                <Label htmlFor="name">사용자명</Label>
                 <div className="flex gap-2">
                   <User className="h-4 w-4 mt-3 text-muted-foreground" />
                   <Input
-                    id="username"
-                    value={formData.username}
+                    id="name"
+                    value={user.name}
                     disabled={!isEditing}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
               </div>
@@ -89,7 +111,7 @@ const Profile = () => {
                   <Input
                     id="email"
                     type="email"
-                    value={formData.email}
+                    value={user.email}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -97,26 +119,15 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="jobRole">직무</Label>
+                <Label htmlFor="position">직무</Label>
                 <div className="flex gap-2">
                   <Briefcase className="h-4 w-4 mt-3 text-muted-foreground" />
                   <Input
-                    id="jobRole"
-                    value={formData.jobRole}
+                    id="position"
+                    value={user.position}
                     disabled={!isEditing}
-                    onChange={(e) => setFormData({ ...formData, jobRole: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     placeholder="예: 프론트엔드 개발자"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>가입일</Label>
-                <div className="flex gap-2">
-                  <Calendar className="h-4 w-4 mt-3 text-muted-foreground" />
-                  <Input
-                    value={user?.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : ''}
-                    disabled
                   />
                 </div>
               </div>

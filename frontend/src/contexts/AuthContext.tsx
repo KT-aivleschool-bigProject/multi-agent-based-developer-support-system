@@ -93,8 +93,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 사용자 상세 정보 가져오기
   const fetchUserDetails = async (userId: number, email: string, role: string): Promise<User | null> => {
     try {
-      // 실제 API가 구현되면 userAPI.getProfile() 사용
-      // 현재는 임시로 기본 정보만 반환
+      // 실제 API 호출하여 사용자 정보 가져오기
+      const userData = await userAPI.getUserById(userId);
+      
+      return {
+        userId,
+        email: userData.email,
+        name: userData.name,
+        position: userData.position,
+        role: role as 'USER' | 'ADMIN',
+        profileImage: undefined,
+        projectId: undefined,
+      };
+    } catch (error) {
+      console.error('사용자 정보 가져오기 실패:', error);
+      // API 호출 실패 시 임시 데이터로 fallback
       return {
         userId,
         email,
@@ -104,9 +117,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profileImage: undefined,
         projectId: undefined,
       };
-    } catch (error) {
-      console.error('사용자 정보 가져오기 실패:', error);
-      return null;
     }
   };
 
