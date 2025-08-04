@@ -21,14 +21,14 @@ public class PostController {
 
     @PostMapping("/init")
     public ResponseEntity<Long> startPostWriting(@RequestHeader("X-User-Id") Long userId) {
-        Post post = postService.startPostWriting(userId);
-        return ResponseEntity.ok(post.getPostId());
-    }   
+        Long postId = postService.startPostWriting(userId);
+        return ResponseEntity.status(201).body(postId);
+    }
 
     @PatchMapping("/{id}/savepost")
-    public ResponseEntity<Post> savePost(@PathVariable(value = "id") Long id, @RequestBody SavePostCommand savePostCommand) {
-        Post post = postService.savePost(id, savePostCommand);
-        return ResponseEntity.ok(post);
+    public ResponseEntity<Long> savePost(@PathVariable(value = "id") Long id, @RequestBody SavePostCommand savePostCommand) {
+        Long postId = postService.savePost(id, savePostCommand);
+        return ResponseEntity.ok(postId);
     }
 
     @GetMapping("/{id}/checkBeforeEditing")
@@ -44,16 +44,16 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPost(@PathVariable(value = "id") Long id) {
-        Post post = postService.getPost(id);
-        return ResponseEntity.ok(post);
+    public ResponseEntity<PostResponseDto> getPost(@PathVariable(value = "id") Long id) {
+        PostResponseDto postResponseDto = postService.getPost(id);
+        return ResponseEntity.ok(postResponseDto);
     }
 
     @GetMapping("/list")
-    public ResponseEntity<Page<Post>> getPostList(@PageableDefault(page = 0, size = 10, sort = "postId", direction = Sort.Direction.DESC) Pageable pageable,
+    public ResponseEntity<Page<PostResponseDto>> getPostList(@PageableDefault(page = 0, size = 10, sort = "postId", direction = Sort.Direction.DESC) Pageable pageable,
                                                     @RequestParam(required = false) String searchKeyword) {
-        Page<Post> list = null;
-        
+        Page<PostResponseDto> list = null;
+
         if(searchKeyword != null && !searchKeyword.isEmpty()) {
             list = postService.getPostListByKeyword(searchKeyword, pageable);
         } else {

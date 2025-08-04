@@ -1,6 +1,8 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
 import multiagentbaseddevelopersupportsystem.PostApplication;
+import multiagentbaseddevelopersupportsystem.external.UserClient;
+
 import javax.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -52,6 +54,26 @@ public class Post  {
     
     @Column(name="user_id", nullable=false)
     private Long userId;
+
+    public static UserClient userClient() {
+        UserClient userClient = PostApplication.applicationContext.getBean(
+            UserClient.class
+        );
+        return userClient;
+    }
+
+    public PostResponseDto toDto() {
+        UserDto user = userClient().getUserById(this.userId);
+        return PostResponseDto.builder()
+            .postId(this.postId)
+            .title(this.title)
+            .content(this.content)
+            .viewCount(this.viewCount)
+            .createdAt(this.createdAt)
+            .updatedAt(this.updatedAt)
+            .userName(user.getName())
+            .build();
+    }
 
 }
 
