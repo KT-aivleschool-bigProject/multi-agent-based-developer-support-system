@@ -78,6 +78,10 @@ const Calendar = () => {
       <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
         <div className="lg:col-span-5">
           <Card>
+            <CardHeader>
+              <CardTitle>달력</CardTitle>
+              <CardDescription>날짜를 선택하여 일정을 확인하세요.</CardDescription>
+            </CardHeader>
             <CardContent>
               <div className="rounded-md border fullcalendar-wrapper">
                 <FullCalendar
