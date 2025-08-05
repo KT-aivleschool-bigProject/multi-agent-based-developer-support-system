@@ -53,5 +53,9 @@ public class User {
                 .role(Role.USER)
                 .build();
     }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
+    }
 }
 
