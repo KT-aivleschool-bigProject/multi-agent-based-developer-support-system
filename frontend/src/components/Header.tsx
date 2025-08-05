@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTheme } from "next-themes"
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -12,26 +12,28 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Code2, LogOut, Settings, User } from 'lucide-react';
+import { Code2, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
 
 const Header = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "로그아웃 완료",
-        description: "안전하게 로그아웃되었습니다.",
-      });
-      navigate('/login');
-    } catch (error) {
-      toast({
-        title: "로그아웃 오류",
-        description: "로그아웃 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
+  const handleLogout = () => {
+    logout();
+    toast({
+      title: "로그아웃 완료",
+      description: "안전하게 로그아웃되었습니다.",
+    });
+    navigate('/login');
+  };
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'dark':
+        return <Moon className="h-4 w-4" />;
+      default:
+        return <Sun className="h-4 w-4" />;
     }
   };
 
@@ -43,8 +45,25 @@ const Header = () => {
       </Link>
 
       <div className="flex items-center space-x-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              {getThemeIcon()}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setTheme("light")}>
+              <Sun className="mr-2 h-4 w-4" />
+              라이트 모드
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("dark")}>
+              <Moon className="mr-2 h-4 w-4" />
+              다크 모드
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        {isAuthenticated && user ? (
+        {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -65,7 +84,7 @@ const Header = () => {
                   <p className="w-[200px] truncate text-sm text-muted-foreground">
                     {user.email}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground capitalize">
                     {user.position}
                   </p>
                 </div>
