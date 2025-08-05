@@ -274,6 +274,31 @@ onMounted(() => {
     font-weight: bold;
     margin-bottom: 8px;
     background: white;
+    color: #000; /* 라이트모드에서 검은색 */
+}
+
+/* 다크모드에서 요일 헤더 배경색 어둡게 설정 */
+.dark .weekdays {
+    background: hsl(var(--muted)) !important; /* 어두운 배경색 */
+    color: hsl(var(--foreground)) !important; /* 밝은 텍스트색 */
+}
+
+/* 라이트모드에서 일요일과 토요일 색상 */
+.weekdays span:nth-child(1) {
+    color: #ef4444 !important; /* 일요일 - 빨간색 */
+}
+
+.weekdays span:nth-child(7) {
+    color: #3b82f6 !important; /* 토요일 - 파란색 */
+}
+
+/* 다크모드에서 일요일과 토요일 색상 */
+.dark .weekdays span:nth-child(1) {
+    color: #f87171 !important; /* 일요일 - 다크모드용 빨간색 */
+}
+
+.dark .weekdays span:nth-child(7) {
+    color: #60a5fa !important; /* 토요일 - 다크모드용 파란색 */
 }
 
 .dates {
