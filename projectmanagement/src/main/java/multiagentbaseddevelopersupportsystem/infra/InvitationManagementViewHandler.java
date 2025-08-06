@@ -1,7 +1,5 @@
 package multiagentbaseddevelopersupportsystem.infra;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
 import multiagentbaseddevelopersupportsystem.config.kafka.KafkaProcessor;
 import multiagentbaseddevelopersupportsystem.domain.*;
@@ -13,38 +11,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class InvitationManagementViewHandler {
 
-    //<<< DDD / CQRS
     @Autowired
     private InvitationManagementRepository invitationManagementRepository;
 
+    // Membersinvited 이벤트 수신
     @StreamListener(KafkaProcessor.INPUT)
-    public void whenMemberIdInvited_then_CREATE_1(
-        @Payload MemberIdInvited memberIdInvited
+    public void whenMembersinvited_then_CREATE(
+        @Payload Membersinvited event
     ) {
         try {
-            if (!memberIdInvited.validate()) return;
+            if (!event.validate()) return;
 
-            // view 객체 생성
-            InvitationManagement invitationManagement = new InvitationManagement();
-            // view 객체에 이벤트의 Value 를 set 함
-            // view 레파지 토리에 save
-            invitationManagementRepository.save(invitationManagement);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+            // emails 리스트를 하나씩 꺼내서 각각 InvitationManagement로 저장
+            for (String email : event.getMembersEmail()) {
+                InvitationManagement invitation = new InvitationManagement();
+                invitation.setProjectId(event.getProjectId());
+                invitation.setEmail(email);
+                invitation.setStatus("invited");
 
-    @StreamListener(KafkaProcessor.INPUT)
-    public void whenProjectInvitationAccepted_then_UPDATE_1(
-        @Payload ProjectInvitationAccepted projectInvitationAccepted
-    ) {
-        try {
-            if (!projectInvitationAccepted.validate()) return;
-            // view 객체 조회
+                invitationManagementRepository.save(invitation);
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    //>>> DDD / CQRS
 }

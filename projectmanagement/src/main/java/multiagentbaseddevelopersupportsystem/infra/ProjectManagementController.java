@@ -38,18 +38,18 @@ public class ProjectManagementController {
         @RequestParam("projectName") String projectName,
         @RequestParam("projectDescription") String projectDescription,
         @RequestParam(value = "files", required = false) List<MultipartFile> files,
-        @RequestParam(value = "projectStatus", required = false) String projectStatus
+        @RequestParam(value = "projectStatus", required = false) String projectStatus,
+        @RequestParam(value = "inviteEmails", required = false) List<String> inviteEmails  //추가: 이메일 초대
     ) throws Exception {
-        System.out.println(
-            "##### /projectManagement/createProject  called #####"
-        );
-        
+        System.out.println("##### /projectManagement/createProject  called #####");
+
         CreateProjectCommand createProjectCommand = new CreateProjectCommand();
         createProjectCommand.setProjectName(projectName);
         createProjectCommand.setProjectDescription(projectDescription);
         createProjectCommand.setProjectStatus(ProjectStatus.INIT);
         createProjectCommand.setFiles(files);
-        
+        createProjectCommand.setInviteEmails(inviteEmails);
+
         // 파일 업로드 처리
         if (files != null && !files.isEmpty()) {
             try {
@@ -59,14 +59,14 @@ public class ProjectManagementController {
                 throw new RuntimeException("파일 업로드 중 오류가 발생했습니다: " + e.getMessage(), e);
             }
         }
-        
+
         ProjectManagement projectManagement = new ProjectManagement();
-        
         projectManagement.createProject(createProjectCommand);
         projectManagementRepository.save(projectManagement);
+
         return projectManagement;
     }
-    
+
     /**
      * 다중 파일 업로드 전용 엔드포인트
      */
@@ -79,18 +79,18 @@ public class ProjectManagementController {
         @RequestParam("files") List<MultipartFile> files
     ) throws Exception {
         System.out.println("##### /projectManagement/uploadMultipleFiles called #####");
-        
+
         if (files == null || files.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 없습니다.");
         }
-        
+
         try {
             return azureStorageService.uploadFiles(files);
         } catch (IOException e) {
             throw new RuntimeException("파일 업로드 중 오류가 발생했습니다: " + e.getMessage(), e);
         }
     }
-    
+
     /**
      * 단일 파일 업로드 엔드포인트
      */
@@ -103,11 +103,11 @@ public class ProjectManagementController {
         @RequestParam("file") MultipartFile file
     ) throws Exception {
         System.out.println("##### /projectManagement/uploadSingleFile called #####");
-        
+
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("업로드할 파일이 없습니다.");
         }
-        
+
         try {
             System.out.println("Calling azureStorageService.uploadFile...");
             String result = azureStorageService.uploadFile(file);
@@ -131,7 +131,7 @@ public class ProjectManagementController {
     )
     public String testAzureConnection() {
         System.out.println("##### /projectManagement/testAzureConnection called #####");
-        
+
         try {
             // Azure Storage 서비스 초기화 테스트
             azureStorageService.initializeClient();
@@ -142,22 +142,31 @@ public class ProjectManagementController {
     }
 
     @RequestMapping(
-        value = "/projectManagements/addteammemberwithid",
+        value = "/projectManagements/{projectId}/invite",
         method = RequestMethod.POST,
         produces = "application/json;charset=UTF-8"
     )
-    public ProjectManagement addTeamMemberWithId(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        @RequestBody AddTeamMemberWithIdCommand addTeamMemberWithIdCommand
-    ) throws Exception {
-        System.out.println(
-            "##### /projectManagement/addTeamMemberWithId  called #####"
-        );
-        ProjectManagement projectManagement = new ProjectManagement();
-        projectManagement.addTeamMemberWithId(addTeamMemberWithIdCommand);
-        projectManagementRepository.save(projectManagement);
-        return projectManagement;
+    public String inviteTeamMembers(
+        @PathVariable("projectId") Long projectId,
+        @RequestBody List<String> emails
+    ) {
+        System.out.println("##### /projectManagements/" + projectId + "/invite called #####");
+
+        Optional<ProjectManagement> optionalProject = projectManagementRepository.findById(projectId);
+
+        if (!optionalProject.isPresent()) {
+            throw new RuntimeException("Project not found with ID: " + projectId);
+        }
+
+        ProjectManagement project = optionalProject.get();
+
+        if (emails == null || emails.isEmpty()) {
+            throw new IllegalArgumentException("초대할 이메일 목록이 비어 있습니다.");
+        }
+
+        project.inviteMembers(emails);  // 이벤트 발행
+        projectManagementRepository.save(project);  // 영속화
+
+        return "팀원 초대 이벤트가 성공적으로 발행되었습니다.";
     }
 }
-//>>> Clean Arch / Inbound Adaptor
