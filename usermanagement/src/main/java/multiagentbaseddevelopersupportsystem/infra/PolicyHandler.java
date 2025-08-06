@@ -35,7 +35,7 @@ public class PolicyHandler {
         userRepository.findById(event.getUserId()).ifPresent(user -> {
             user.setProjectId(event.getProjectId());
             userRepository.save(user);
-            log.info("✅ [ProjectId 갱신 완료] userId={} → projectId={}", user.getUserId(), user.getProjectId());
+            log.info("[ProjectId 갱신 완료] userId={} → projectId={}", user.getUserId(), user.getProjectId());
         });
     }
 }

@@ -15,4 +15,8 @@ public class InvitationManagement {
     @Id
     //@GeneratedValue(strategy=GenerationType.AUTO)
     private Long id;
+    
+    private Long projectId;
+    private String email;
+    private String status;
 }

@@ -5,7 +5,7 @@ import java.util.*;
 import lombok.Data;
 
 @Data
-public class AddTeamMemberWithIdCommand {
+public class AddTeamMemberCommand {
 
     private Long projectId;
     private Long memberId;
