@@ -9,11 +9,6 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-  
-  # 파일 저장 경로 설정
-file:
-  upload:
-    path: /workspaces/multi-agent-based-developer-support-system/attachment/uploads/
 
 ---
 
@@ -54,6 +49,11 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+
+file:
+  storage:
+    type: local
+    path: ./uploads/
 
 springdoc:
   swagger-ui:
@@ -101,5 +101,14 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+azure:
+  storage:
+    account-name: ${AZURE_STORAGE_ACCOUNT}
+    account-key: ${AZURE_STORAGE_KEY}
+    container-name: attachments
 
+file:
+  storage:
+    type: azure
+    backup-enabled: false  
 
