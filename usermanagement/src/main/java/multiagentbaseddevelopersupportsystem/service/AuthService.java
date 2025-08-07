@@ -3,6 +3,7 @@ package multiagentbaseddevelopersupportsystem.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import multiagentbaseddevelopersupportsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.event.Signuped;
 import multiagentbaseddevelopersupportsystem.exception.BusinessException;
 import multiagentbaseddevelopersupportsystem.security.TokenProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -31,6 +32,10 @@ public class AuthService {
         User user = User.toEntity(command, passwordEncoder);
         userRepository.save(user);
         log.info("회원가입 성공: {}", command.getEmail());
+
+        Signuped event = new Signuped(user);
+        event.publishAfterCommit();
+        log.info("Signuped 이벤트 발행: {}", command.getEmail());
     }
 
     public TokenResponseDto login(LoginCommand command) {
