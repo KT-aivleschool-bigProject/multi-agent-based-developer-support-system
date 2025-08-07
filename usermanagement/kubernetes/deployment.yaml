@@ -16,22 +16,59 @@ spec:
     spec:
       containers:
         - name: usermanagement
-          image: "username/usermanagement:latest"
+          image: "bigproject.azurecr.io/usermanagement:v24"
+          env:
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret
+                  key: jwt-secret-key
+            - name: AZURE_MYSQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: url
+            - name: AZURE_MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: username
+            - name: AZURE_MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: password
+            - name: REDIS_HOST
+              value: my-redis-master
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-redis
+                  key: redis-password
           ports:
             - containerPort: 8080
           readinessProbe:
             httpGet:
               path: '/actuator/health'
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 2
-            periodSeconds: 5
-            failureThreshold: 10
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: '/actuator/health'
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 2
-            periodSeconds: 5
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 10
             failureThreshold: 5
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
