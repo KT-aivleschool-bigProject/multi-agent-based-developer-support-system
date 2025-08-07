@@ -169,4 +169,21 @@ public class TokenProvider {
             return e.getClaims();
         }
     }
+
+    public Long getUserIdFromToken(String token) {
+        try {
+            Claims claims = parseClaims(token);
+            Long userId = claims.get("userId", Long.class);
+            
+            if (userId == null) {
+                throw new RuntimeException("토큰에 userId 정보가 없습니다.");
+            }
+            
+            log.debug("토큰에서 추출한 userId: {}", userId);
+            return userId;
+        } catch (Exception e) {
+            log.error("토큰에서 userId 추출 실패: {}", e.getMessage());
+            throw new RuntimeException("토큰에서 userId를 추출할 수 없습니다.", e);
+        }
+    }
 }
