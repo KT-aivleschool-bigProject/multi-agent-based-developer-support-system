@@ -40,5 +40,4 @@ public class AuthController {
         authService.logout(token);
         return ResponseEntity.noContent().build();  
     }
-
 }

@@ -18,7 +18,7 @@ import java.time.Duration;
 
 @Configuration
 @Slf4j
-@Profile("!test") // 테스트 프로필에서는 Redis 비활성화
+@Profile("!default")
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisConfig {
 
