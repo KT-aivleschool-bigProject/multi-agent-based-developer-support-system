@@ -86,7 +86,7 @@ spring:
         - id: usermanagement
           uri: http://usermanagement:8080
           predicates:
-            - Path=/users/**, 
+            - Path=/auth/**,/users/**
         - id: codeassistant
           uri: http://codeassistant:8080
           predicates:

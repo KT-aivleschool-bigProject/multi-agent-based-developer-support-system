@@ -12,6 +12,9 @@ logging:
   level:
     org.hibernate.type: trace
     org.springframework.cloud: debug
+    org.springframework.security: DEBUG                    # ✅ 추가
+    multiagentbaseddevelopersupportsystem.security: DEBUG  # ✅ 추가
+    org.springframework.web.filter: DEBUG                  # ✅ 추가
 
 ---
 server:

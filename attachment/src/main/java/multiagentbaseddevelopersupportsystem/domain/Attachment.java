@@ -20,7 +20,7 @@ import multiagentbaseddevelopersupportsystem.AttachmentApplication;
 public class Attachment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long fileId;
 
     @Column(name="post_id", nullable=false)
