@@ -7,9 +7,9 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.stream.annotation.EnableBinding;
 import org.springframework.context.ApplicationContext;
 
+@EnableFeignClients(basePackages = "multiagentbaseddevelopersupportsystem.external")
 @SpringBootApplication
 @EnableBinding(KafkaProcessor.class)
-@EnableFeignClients
 public class PostApplication {
 
     public static ApplicationContext applicationContext;

@@ -29,7 +29,7 @@ public class InviteController {
     //전체 초대 목록 조회 API
     @GetMapping("/invites")
     public List<Invite> getAllInvites() {
-        return (List<Invite>) inviteRepository.findAll(); // 강제 캐스팅
+        return inviteRepository.findAll();
     }
 
     //이메일 기준 초대 조회 API

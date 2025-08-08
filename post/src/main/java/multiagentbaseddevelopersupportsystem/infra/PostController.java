@@ -2,6 +2,8 @@ package multiagentbaseddevelopersupportsystem.infra;
 
 import multiagentbaseddevelopersupportsystem.domain.*;
 import multiagentbaseddevelopersupportsystem.service.PostService;
+import multiagentbaseddevelopersupportsystem.service.PostAutoGenerateService;
+
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class PostController {
 
     private final PostService postService;
+    private final PostAutoGenerateService autoService; //osh: ai 자동생성 서비스 추가
 
     @PostMapping("/init")
     public ResponseEntity<Long> startPostWriting(@RequestHeader("X-User-Id") Long userId) {
@@ -61,5 +65,12 @@ public class PostController {
         }
 
         return ResponseEntity.ok(list);
+    }
+
+    //osh: ai 자동작성 api 추가
+    @PostMapping("/{id}/auto-generate")
+    public ResponseEntity<PostResponseDto> autoGenerate(
+        @RequestHeader("X-User-Id") Long userId, @PathVariable Long id) {
+    return ResponseEntity.ok(autoService.autoGenerateFromAttachments(userId, id));
     }
 }

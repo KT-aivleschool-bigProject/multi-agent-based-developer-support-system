@@ -1,5 +1,6 @@
-server:
-  port: 8080
+# ⛔️ 맨 위 이건 지웁시다
+# server:
+#   port: 8080
 
 spring:
   application:
@@ -18,7 +19,7 @@ spring:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
     username: sa
-    password: 
+    password:
   h2:
     console:
       enabled: true
@@ -27,7 +28,7 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
-    
+
   cloud:
     stream:
       kafka:
@@ -50,10 +51,14 @@ spring:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
 
+  # ✅ 기본 프로필에서 Azure 자동설정 비활성화 (이거 중요)
+  autoconfigure:
+    exclude: com.azure.spring.autoconfigure.storage.StorageAutoConfiguration
+
 file:
   storage:
     type: local
-    path: ./uploads/
+    local-path: ./uploads/      # ✅ 키 이름 local-path 로
 
 springdoc:
   swagger-ui:
@@ -66,9 +71,8 @@ logging:
     org.hibernate.type: trace
     org.springframework.cloud: debug
 
-
 server:
-  port: 8091
+  port: 8091   # ✅ 기본 프로필 포트는 8091만 유지
 
 ---
 
@@ -86,10 +90,10 @@ spring:
       idle-timeout: 300000
       connection-timeout: 20000
       max-lifetime: 1800000
-      
+
   jpa:
     hibernate:
-      ddl-auto: validate  # 프로덕션에서는 validate 사용
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
@@ -119,6 +123,8 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+
+# ✅ docker 프로필에서만 Azure 설정/사용
 azure:
   storage:
     account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
@@ -129,12 +135,3 @@ azure:
 file:
   storage:
     type: azure
-
-logging:
-  level:
-    root: INFO
-    multiagentbaseddevelopersupportsystem: INFO
-    com.azure: WARN
-    org.springframework.jdbc: DEBUG
- 
-

@@ -12,7 +12,7 @@ spring:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
     username: sa
-    password: 
+    password:
   h2:
     console:
       enabled: true
@@ -42,7 +42,6 @@ spring:
           contentType: application/json
         event-out:
           destination: multiagentbaseddevelopersupportsystem
-
           contentType: application/json
 
 springdoc:
@@ -57,9 +56,13 @@ logging:
     org.springframework.cloud: debug
 
 api:
-  url: 
-    post: localhost:8090 
-    
+  url:
+    post: localhost:8090
+
+attachment:
+  base-url: http://localhost:8091   # 첨부 서비스 주소
+aiagent:
+  base-url: http://localhost:8000   # FastAPI 주소 (추후 확정 시 변경)
 
 server:
   port: 8090
@@ -97,7 +100,10 @@ spring:
           contentType: application/json
 
 api:
-  url: 
-    post: post:8090 
-    
+  url:
+    post: post:8090
 
+attachment:
+  base-url: http://attachment:8091
+aiagent:
+  base-url: http://aiagent:8000

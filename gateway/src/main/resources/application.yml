@@ -19,15 +19,15 @@ spring:
         - id: codeassistant
           uri: http://localhost:8083
           predicates:
-            - Path=, 
+            - Path=,
         - id: task
           uri: http://localhost:8084
           predicates:
-            - Path=/taskAssignments/**, 
+            - Path=/taskAssignments/**,
         - id: communication
           uri: http://localhost:8085
           predicates:
-            - Path=, 
+            - Path=,
         - id: projectmanagement
           uri: http://localhost:8089
           predicates:
@@ -35,11 +35,15 @@ spring:
         - id: schedule
           uri: http://localhost:8086
           predicates:
-            - Path=/calendars/**, 
+            - Path=/calendars/**,
         - id: notification
           uri: http://localhost:8087
           predicates:
-            - Path=/notifications/**, 
+            - Path=/notifications/**,
+        - id: invite
+          uri: http://localhost:8088
+          predicates:
+            - Path=/invites/**,
         - id: post
           uri: http://localhost:8090
           predicates:
@@ -94,15 +98,15 @@ spring:
         - id: codeassistant
           uri: http://codeassistant:8080
           predicates:
-            - Path=, 
+            - Path=,
         - id: task
           uri: http://task:8080
           predicates:
-            - Path=/taskAssignments/**, 
+            - Path=/taskAssignments/**,
         - id: communication
           uri: http://communication:8080
           predicates:
-            - Path=, 
+            - Path=,
         - id: projectmanagement
           uri: http://projectmanagement:8080
           predicates:
@@ -110,15 +114,19 @@ spring:
         - id: schedule
           uri: http://schedule:8080
           predicates:
-            - Path=/calendars/**, 
+            - Path=/calendars/**,
         - id: notification
           uri: http://notification:8080
           predicates:
-            - Path=/notifications/**, 
+            - Path=/notifications/**,
+        - id: invite
+          uri: http://invite:8080
+          predicates:
+            - Path=/invites/**,
         - id: board
           uri: http://board:8080
           predicates:
-            - Path=/posts/**, /attachments/**, /comments/**, 
+            - Path=/posts/**, /attachments/**, /comments/**,
         - id: frontend
           uri: http://frontend:8080
           predicates:
@@ -136,5 +144,3 @@ spring:
 
 server:
   port: 8080
-
-
