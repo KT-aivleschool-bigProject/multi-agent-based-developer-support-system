@@ -1,4 +1,4 @@
-package multiagentsystem.domain;
+package multiagentbaseddevelopersupportsystem.domain;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.*;
 import lombok.Data;
-import multiagentsystem.InvitemanagementApplication;
-import multiagentsystem.domain.Teamapproved;
+import multiagentbaseddevelopersupportsystem.InvitemanagementApplication;
+import multiagentbaseddevelopersupportsystem.domain.Teamapproved;
 
 @Entity
 @Table(name = "Invite_table")
