@@ -1,9 +1,9 @@
-package multiagentsystem.infra;
+package multiagentbaseddevelopersupportsystem.infra;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import multiagentsystem.InvitemanagementApplication;
-import multiagentsystem.config.kafka.KafkaProcessor;
+import multiagentbaseddevelopersupportsystem.InvitemanagementApplication;
+import multiagentbaseddevelopersupportsystem.config.kafka.KafkaProcessor;
 import org.springframework.beans.BeanUtils;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
