@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: usermanagement
-          image: "bigproject.azurecr.io/usermanagement:v24"
+          image: "bigproject.azurecr.io/usermanagement:v25"
           env:
             - name: JWT_SECRET_KEY
               valueFrom:
