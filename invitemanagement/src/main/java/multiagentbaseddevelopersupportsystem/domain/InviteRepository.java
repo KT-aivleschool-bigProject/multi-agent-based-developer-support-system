@@ -1,6 +1,6 @@
-package multiagentsystem.domain;
+package multiagentbaseddevelopersupportsystem.domain;
 
-import multiagentsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.domain.*;
 import java.util.List; 
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;

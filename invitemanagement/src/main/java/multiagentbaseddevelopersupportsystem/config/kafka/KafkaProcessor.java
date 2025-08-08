@@ -1,4 +1,4 @@
-package multiagentsystem.config.kafka;
+package multiagentbaseddevelopersupportsystem.config.kafka;
 
 import org.springframework.cloud.stream.annotation.Input;
 import org.springframework.cloud.stream.annotation.Output;

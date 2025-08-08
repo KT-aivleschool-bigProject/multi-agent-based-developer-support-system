@@ -1,6 +1,6 @@
-package multiagentsystem.infra;
+package multiagentbaseddevelopersupportsystem.infra;
 
-import multiagentsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.domain.*;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.RepresentationModelProcessor;

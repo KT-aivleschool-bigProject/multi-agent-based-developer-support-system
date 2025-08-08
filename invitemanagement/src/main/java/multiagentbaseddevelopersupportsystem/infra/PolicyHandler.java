@@ -1,14 +1,14 @@
-package multiagentsystem.infra;
+package multiagentbaseddevelopersupportsystem.infra;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.transaction.Transactional;
 import java.util.Map;
 
-import multiagentsystem.config.kafka.KafkaProcessor;
-import multiagentsystem.domain.Membersinvited;
-import multiagentsystem.domain.Signuped;
-import multiagentsystem.service.InviteService;
+import multiagentbaseddevelopersupportsystem.config.kafka.KafkaProcessor;
+import multiagentbaseddevelopersupportsystem.domain.Membersinvited;
+import multiagentbaseddevelopersupportsystem.domain.Signuped;
+import multiagentbaseddevelopersupportsystem.service.InviteService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.annotation.StreamListener;
