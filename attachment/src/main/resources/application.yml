@@ -9,11 +9,6 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
       enabled: true
-  
-  # 파일 저장 경로 설정
-file:
-  upload:
-    path: /workspaces/multi-agent-based-developer-support-system/attachment/uploads/
 
 ---
 
@@ -55,6 +50,11 @@ spring:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
 
+file:
+  storage:
+    type: local
+    path: ./uploads/
+
 springdoc:
   swagger-ui:
     path: /swagger-ui
@@ -74,12 +74,30 @@ server:
 
 spring:
   profiles: docker
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${AZURE_MYSQL_URL:jdbc:mysql://your-mysql-server.mysql.database.azure.com:3306/attachment_db?useSSL=true&requireSSL=true&serverTimezone=UTC}
+    username: ${AZURE_MYSQL_USERNAME:your-username}
+    password: ${AZURE_MYSQL_PASSWORD:your-password}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+      max-lifetime: 1800000
+      
   jpa:
+    hibernate:
+      ddl-auto: validate  # 프로덕션에서는 validate 사용
+    show-sql: false
     properties:
       hibernate:
-        show_sql: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: true
-        implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
+        use_sql_comments: true
+    database: mysql
+
   cloud:
     stream:
       kafka:
@@ -101,5 +119,22 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+azure:
+  storage:
+    account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
+    account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
+    container-name: ${AZURE_STORAGE_CONTAINER_NAME:attachments}
+    endpoint: https://${azure.storage.account-name}.blob.core.windows.net
 
+file:
+  storage:
+    type: azure
+
+logging:
+  level:
+    root: INFO
+    multiagentbaseddevelopersupportsystem: INFO
+    com.azure: WARN
+    org.springframework.jdbc: DEBUG
+ 
 

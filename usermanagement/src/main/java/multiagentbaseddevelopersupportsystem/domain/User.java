@@ -1,7 +1,10 @@
 package multiagentbaseddevelopersupportsystem.domain;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import lombok.Data;
@@ -15,11 +18,14 @@ import multiagentbaseddevelopersupportsystem.domain.Role;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "User_table")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_email", columnList = "email")
+})
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)  // MySQL AUTO_INCREMENT
+    @Column(name = "user_id")
     private Long userId;
 
     @Column(name = "email", nullable = false, unique = true, length = 100)
@@ -44,6 +50,14 @@ public class User {
     @Column(name = "project_id")
     private Long projectId;
 
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     public static User toEntity(SignupCommand cmd, PasswordEncoder encoder) {
         return User.builder()
                 .email(cmd.getEmail())
@@ -52,6 +66,10 @@ public class User {
                 .position(cmd.getPosition())
                 .role(Role.USER)
                 .build();
+    }
+
+    public void setProjectId(Long projectId) {
+        this.projectId = projectId;
     }
 }
 
