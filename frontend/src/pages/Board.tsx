@@ -197,31 +197,52 @@ const Board = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
+                    onClick={() => {
+                      const currentGroup = Math.floor(currentPage / 5);
+                      const prevGroup = Math.max(0, currentGroup - 1);
+                      const targetPage = prevGroup * 5;
+                      handlePageChange(targetPage);
+                    }}
                     disabled={currentPage === 0}
                   >
                     이전
                   </Button>
                   
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = Math.max(0, Math.min(totalPages - 1, currentPage - 2 + i));
-                    return (
+                  {/* 페이지 번호 계산 로직 개선 - 5페이지씩 그룹으로 표시 */}
+                  {(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    // 현재 페이지가 속한 그룹 계산 (0부터 시작)
+                    const currentGroup = Math.floor(currentPage / maxVisiblePages);
+                    const startPage = currentGroup * maxVisiblePages;
+                    const endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(i);
+                    }
+                    
+                    return pages.map((pageNum) => (
                       <Button
-                        key={pageNum}
+                        key={`page-${pageNum}`}
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => handlePageChange(pageNum)}
                       >
                         {pageNum + 1}
                       </Button>
-                    );
-                  })}
+                    ));
+                  })()}
                   
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages - 1}
+                    onClick={() => {
+                      const currentGroup = Math.floor(currentPage / 5);
+                      const nextGroup = currentGroup + 1;
+                      const targetPage = Math.min(totalPages - 1, nextGroup * 5);
+                      handlePageChange(targetPage);
+                    }}
+                    disabled={currentPage >= totalPages - 1}
                   >
                     다음
                   </Button>
