@@ -90,20 +90,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 사용자 상세 정보 가져오기
+  // 사용자 상세 정보 가져오기 (토큰 기반)
   const fetchUserDetails = async (userId: number, email: string, role: string): Promise<User | null> => {
     try {
-      // 실제 API 호출하여 사용자 정보 가져오기
-      const userData = await userAPI.getUserById(userId);
+      // 토큰 기반으로 사용자 정보 가져오기
+      const userData = await userAPI.getProfile();
       
       return {
-        userId,
+        userId: userData.userId,
         email: userData.email,
         name: userData.name,
         position: userData.position,
         role: role as 'USER' | 'ADMIN',
-        profileImage: undefined,
-        projectId: undefined,
+        profileImage: userData.profileImage,
+        projectId: userData.projectId,
       };
     } catch (error) {
       console.error('사용자 정보 가져오기 실패:', error);
