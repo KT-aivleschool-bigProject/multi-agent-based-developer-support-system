@@ -1,10 +1,10 @@
-package multiagentsystem.domain;
+package multiagentbaseddevelopersupportsystem.domain;
 
 import java.time.LocalDate;
 import java.util.*;
 import lombok.*;
-import multiagentsystem.domain.*;
-import multiagentsystem.infra.AbstractEvent;
+import multiagentbaseddevelopersupportsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.infra.AbstractEvent;
 
 //<<< DDD / Domain Event
 @Data
