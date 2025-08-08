@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,12 +7,22 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Plus, X, Upload, FileText, Loader2 } from 'lucide-react';
 import { postAPI } from '@/services/api';
 
-const BoardNew = () => {
+interface Post {
+  postId: number;
+  title: string;
+  content: string;
+  userId: number;
+  userName?: string;
+  createdAt: string;
+  viewCount: number;
+}
+
+const BoardEdit = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
@@ -20,6 +31,31 @@ const BoardNew = () => {
   const [currentTag, setCurrentTag] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState<Post | null>(null);
+
+  // 게시글 정보 가져오기
+  const fetchPost = async () => {
+    if (!id) return;
+    
+    try {
+      setLoading(true);
+      const postData = await postAPI.getPost(parseInt(id));
+      setPost(postData);
+      setTitle(postData.title || '');
+      setContent(postData.content || '');
+    } catch (error) {
+      console.error('게시글 조회 실패:', error);
+      toast({
+        title: "오류",
+        description: "게시글을 불러오는데 실패했습니다.",
+        variant: "destructive",
+      });
+      navigate('/board');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
@@ -54,29 +90,28 @@ const BoardNew = () => {
       return;
     }
 
+    if (!id) return;
+
     setIsSubmitting(true);
 
     try {
-      // 1. 게시글 작성 시작 (init)
-      const postId = await postAPI.startPostWriting();
-      
-      // 2. 게시글 저장
-      await postAPI.savePost(postId, {
+      // 게시글 저장
+      await postAPI.savePost(parseInt(id), {
         title: title.trim(),
         content: content.trim()
       });
 
       toast({
         title: "성공",
-        description: "문서가 성공적으로 작성되었습니다.",
+        description: "문서가 성공적으로 수정되었습니다.",
       });
       
-      navigate('/board');
+      navigate(`/board/${id}`);
     } catch (error) {
-      console.error('게시글 작성 실패:', error);
+      console.error('게시글 수정 실패:', error);
       toast({
         title: "오류",
-        description: "문서 작성에 실패했습니다. 다시 시도해주세요.",
+        description: "문서 수정에 실패했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     } finally {
@@ -84,20 +119,44 @@ const BoardNew = () => {
     }
   };
 
+  useEffect(() => {
+    fetchPost();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">게시글을 찾을 수 없습니다.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center mb-8">
         <Button 
           variant="ghost" 
-          onClick={() => navigate('/board')}
+          onClick={() => navigate(`/board/${id}`)}
           className="mr-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           돌아가기
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">문서 작성</h1>
-          <p className="text-muted-foreground">새로운 프로젝트 문서를 작성해보세요.</p>
+          <h1 className="text-3xl font-bold">문서 수정</h1>
+          <p className="text-muted-foreground">기존 문서를 수정해보세요.</p>
         </div>
       </div>
 
@@ -109,7 +168,7 @@ const BoardNew = () => {
               기본 정보
             </CardTitle>
             <CardDescription>
-              문서의 제목과 내용을 입력해주세요.
+              문서의 제목과 내용을 수정해주세요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -231,7 +290,7 @@ const BoardNew = () => {
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => navigate('/board')}
+            onClick={() => navigate(`/board/${id}`)}
             disabled={isSubmitting}
           >
             취소
@@ -240,10 +299,10 @@ const BoardNew = () => {
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                저장 중...
+                수정 중...
               </>
             ) : (
-              '문서 저장'
+              '문서 수정'
             )}
           </Button>
         </div>
@@ -252,4 +311,4 @@ const BoardNew = () => {
   );
 };
 
-export default BoardNew;
+export default BoardEdit;
