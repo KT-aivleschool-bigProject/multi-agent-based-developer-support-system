@@ -4,11 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, X, Upload, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, X, Upload, FileText, Loader2 } from 'lucide-react';
 import { postAPI } from '@/services/api';
 
 const BoardNew = () => {
@@ -16,21 +15,8 @@ const BoardNew = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleAddTag = () => {
-    if (currentTag.trim() && !tags.includes(currentTag.trim())) {
-      setTags([...tags, currentTag.trim()]);
-      setCurrentTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -142,44 +128,6 @@ const BoardNew = () => {
                 {content.length}/5000자
               </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>태그 (선택사항)</CardTitle>
-            <CardDescription>
-              문서 분류를 위한 태그를 추가하세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex space-x-2">
-              <Input
-                value={currentTag}
-                onChange={(e) => setCurrentTag(e.target.value)}
-                placeholder="태그 입력"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                disabled={isSubmitting}
-                maxLength={20}
-              />
-              <Button type="button" onClick={handleAddTag} disabled={isSubmitting}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="cursor-pointer">
-                    #{tag}
-                    <X 
-                      className="h-3 w-3 ml-1" 
-                      onClick={() => !isSubmitting && handleRemoveTag(tag)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 
