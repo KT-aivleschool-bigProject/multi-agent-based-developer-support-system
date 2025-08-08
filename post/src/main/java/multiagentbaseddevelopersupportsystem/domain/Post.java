@@ -26,7 +26,7 @@ import java.util.Collections;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="Post_table")
+@Table(name="posts")
 public class Post  {
 
     @Id
