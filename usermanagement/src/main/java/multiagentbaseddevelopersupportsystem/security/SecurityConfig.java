@@ -29,6 +29,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private final TokenProvider tokenProvider;
+    private final JwtTokenFilter jwtTokenFilter; // ✅ Spring Bean 주입
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
@@ -36,12 +37,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .httpBasic().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
-                .addFilterBefore(new JwtTokenFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class) 
                 .authorizeRequests()
-                .antMatchers("/auth/signup", "/auth/login", "/auth/reissue").permitAll()
-                .antMatchers("/auth/logout").authenticated()
-                .anyRequest().permitAll();
-        http
+                .antMatchers("/auth/signup", "/auth/login", "/auth/reissue", "/users/{userId}").permitAll()
+                .antMatchers("/h2-console/**").permitAll() 
+                .antMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() 
+                .antMatchers("/management/**", "/actuator/**").permitAll() 
+                .antMatchers("/auth/logout", "/users/me").authenticated() 
+                .anyRequest().permitAll()
+                .and()
                 .exceptionHandling()
                 .authenticationEntryPoint(new AuthenticationEntryPoint() {
                     @Override

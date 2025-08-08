@@ -28,6 +28,10 @@ spring:
           uri: http://localhost:8085
           predicates:
             - Path=, 
+        - id: projectmanagement
+          uri: http://localhost:8089
+          predicates:
+            - Path=/projectManagements/**
         - id: schedule
           uri: http://localhost:8086
           predicates:
@@ -86,7 +90,7 @@ spring:
         - id: usermanagement
           uri: http://usermanagement:8080
           predicates:
-            - Path=/users/**, 
+            - Path=/auth/**,/users/**
         - id: codeassistant
           uri: http://codeassistant:8080
           predicates:
@@ -99,6 +103,10 @@ spring:
           uri: http://communication:8080
           predicates:
             - Path=, 
+        - id: projectmanagement
+          uri: http://projectmanagement:8080
+          predicates:
+            - Path=/projectmanagement/**
         - id: schedule
           uri: http://schedule:8080
           predicates:
