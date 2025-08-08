@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,8 @@ const BoardNew = () => {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [postId, setPostId] = useState<number | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -27,6 +29,33 @@ const BoardNew = () => {
   const handleRemoveFile = (indexToRemove: number) => {
     setAttachments(attachments.filter((_, index) => index !== indexToRemove));
   };
+
+  // 페이지 로드 시 게시글 초기화
+  useEffect(() => {
+    const initializePost = async () => {
+      try {
+        setIsInitializing(true);
+        const newPostId = await postAPI.startPostWriting();
+        setPostId(newPostId);
+        toast({
+          title: "게시글 작성 준비 완료",
+          description: "이제 게시글을 작성할 수 있습니다.",
+        });
+      } catch (error) {
+        console.error('게시글 초기화 실패:', error);
+        toast({
+          title: "오류",
+          description: "게시글 작성 준비에 실패했습니다. 다시 시도해주세요.",
+          variant: "destructive",
+        });
+        navigate('/board');
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializePost();
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,13 +69,19 @@ const BoardNew = () => {
       return;
     }
 
+    if (!postId) {
+      toast({
+        title: "오류",
+        description: "게시글 초기화가 완료되지 않았습니다. 페이지를 새로고침해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // 1. 게시글 작성 시작 (init)
-      const postId = await postAPI.startPostWriting();
-      
-      // 2. 게시글 저장
+      // 게시글 저장
       await postAPI.savePost(postId, {
         title: title.trim(),
         content: content.trim()
@@ -87,49 +122,58 @@ const BoardNew = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="h-5 w-5 mr-2" />
-              기본 정보
-            </CardTitle>
-            <CardDescription>
-              문서의 제목과 내용을 입력해주세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title">제목 *</Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="문서 제목을 입력하세요"
-                required
-                disabled={isSubmitting}
-                maxLength={100}
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="content">내용 *</Label>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="문서 내용을 입력하세요"
-                className="min-h-[300px]"
-                required
-                disabled={isSubmitting}
-                maxLength={5000}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                {content.length}/5000자
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {isInitializing ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-lg font-medium">게시글 작성 준비 중...</p>
+            <p className="text-sm text-muted-foreground">잠시만 기다려주세요.</p>
+          </div>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                기본 정보
+              </CardTitle>
+              <CardDescription>
+                문서의 제목과 내용을 입력해주세요.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="title">제목 *</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="문서 제목을 입력하세요"
+                  required
+                  disabled={isSubmitting}
+                  maxLength={100}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="content">내용 *</Label>
+                <Textarea
+                  id="content"
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="문서 내용을 입력하세요"
+                  className="min-h-[300px]"
+                  required
+                  disabled={isSubmitting}
+                  maxLength={5000}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {content.length}/5000자
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
         <Card>
           <CardHeader>
@@ -196,6 +240,7 @@ const BoardNew = () => {
           </Button>
         </div>
       </form>
+      )}
     </div>
   );
 };
