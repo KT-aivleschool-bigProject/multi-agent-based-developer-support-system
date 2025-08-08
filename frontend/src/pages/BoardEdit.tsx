@@ -41,6 +41,9 @@ const BoardEdit = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<Post | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [originalTitle, setOriginalTitle] = useState('');
+  const [originalContent, setOriginalContent] = useState('');
 
   // 게시글 정보 가져오기
   const fetchPost = async () => {
@@ -52,6 +55,8 @@ const BoardEdit = () => {
       setPost(postData);
       setTitle(postData.title || '');
       setContent(postData.content || '');
+      setOriginalTitle(postData.title || '');
+      setOriginalContent(postData.content || '');
     } catch (error) {
       console.error('게시글 조회 실패:', error);
       toast({
@@ -68,12 +73,23 @@ const BoardEdit = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setAttachments([...attachments, ...Array.from(e.target.files)]);
+      setHasUnsavedChanges(true);
     }
   };
 
   const handleRemoveFile = (indexToRemove: number) => {
     setAttachments(attachments.filter((_, index) => index !== indexToRemove));
+    setHasUnsavedChanges(true);
   };
+
+  // 내용 변경 감지
+  useEffect(() => {
+    if (title !== originalTitle || content !== originalContent) {
+      setHasUnsavedChanges(true);
+    } else {
+      setHasUnsavedChanges(false);
+    }
+  }, [title, content, originalTitle, originalContent]);
 
   // 게시글 삭제
   const handleDelete = async () => {
@@ -106,6 +122,11 @@ const BoardEdit = () => {
     }
   };
 
+  // 수정 취소 (단순히 페이지를 벗어남)
+  const handleCancelEdit = () => {
+    navigate(`/board/${id}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -129,6 +150,7 @@ const BoardEdit = () => {
         content: content.trim()
       });
 
+      setHasUnsavedChanges(false);
       toast({
         title: "성공",
         description: "문서가 성공적으로 수정되었습니다.",
@@ -174,14 +196,35 @@ const BoardEdit = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center justify-between mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(`/board/${id}`)}
-          className="mr-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          돌아가기
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="mr-4"
+              disabled={isSubmitting}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              돌아가기
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>수정을 취소하시겠습니까?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {hasUnsavedChanges 
+                  ? "저장되지 않은 변경사항이 있습니다. 정말로 수정을 취소하시겠습니까?"
+                  : "게시글 수정을 취소하시겠습니까?"
+                }
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>계속 수정</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelEdit}>
+                수정 취소
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
         <div className="flex space-x-2">
           <AlertDialog>
@@ -301,7 +344,7 @@ const BoardEdit = () => {
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => navigate(`/board/${id}`)}
+            onClick={handleCancelEdit}
             disabled={isSubmitting}
           >
             취소
