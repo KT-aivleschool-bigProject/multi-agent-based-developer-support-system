@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Eye, MessageSquare, Paperclip, Send, Heart, Share, Edit, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, Paperclip, Send, Edit, Trash2, Loader2 } from 'lucide-react';
 import { postAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -85,13 +84,23 @@ const BoardDetail = () => {
         description: "게시글이 삭제되었습니다.",
       });
       navigate('/board');
-    } catch (error) {
+    } catch (error: any) {
       console.error('게시글 삭제 실패:', error);
-      toast({
-        title: "오류",
-        description: "게시글 삭제에 실패했습니다.",
-        variant: "destructive",
-      });
+      
+      // 권한 관련 에러인지 확인
+      if (error.response?.status === 500 && error.response?.data?.includes("authorized")) {
+        toast({
+          title: "권한 없음",
+          description: "게시글을 삭제할 권한이 없습니다.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "오류",
+          description: "게시글 삭제에 실패했습니다.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -182,36 +191,13 @@ const BoardDetail = () => {
           돌아가기
         </Button>
         
-        {isAuthor && (
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              수정
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  삭제
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>게시글을 삭제하시겠습니까?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    이 작업은 되돌릴 수 없습니다. 게시글과 관련된 모든 데이터가 영구적으로 삭제됩니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-                    삭제
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
+        {/* 임시로 항상 보이도록 수정 */}
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={handleEdit}>
+            <Edit className="h-4 w-4 mr-2" />
+            수정
+          </Button>
+        </div>
       </div>
 
       {/* 문서 본문 */}
@@ -240,24 +226,10 @@ const BoardDetail = () => {
                   <span>{post.commentCount}</span>
                 </div>
               )}
-              <Button variant="ghost" size="sm">
-                <Heart className="h-4 w-4 mr-1" />
-                좋아요
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Share className="h-4 w-4 mr-1" />
-                공유
-              </Button>
             </div>
           </div>
 
           <CardTitle className="text-2xl mb-4">{post.title || '제목 없음'}</CardTitle>
-          
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Badge variant="secondary">
-              #문서
-            </Badge>
-          </div>
         </CardHeader>
         
         <CardContent>
@@ -324,15 +296,6 @@ const BoardDetail = () => {
                     <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{comment.content}</p>
-                  <div className="flex space-x-2">
-                    <Button variant="ghost" size="sm" className="text-xs">
-                      <Heart className="h-3 w-3 mr-1" />
-                      좋아요
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-xs">
-                      답글
-                    </Button>
-                  </div>
                 </div>
               </div>
             ))}

@@ -5,11 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Plus, X, Upload, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, X, Upload, FileText, Loader2, Trash2 } from 'lucide-react';
 import { postAPI } from '@/services/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Post {
   postId: number;
@@ -27,8 +37,6 @@ const BoardEdit = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,17 +65,6 @@ const BoardEdit = () => {
     }
   };
 
-  const handleAddTag = () => {
-    if (currentTag.trim() && !tags.includes(currentTag.trim())) {
-      setTags([...tags, currentTag.trim()]);
-      setCurrentTag('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setAttachments([...attachments, ...Array.from(e.target.files)]);
@@ -76,6 +73,37 @@ const BoardEdit = () => {
 
   const handleRemoveFile = (indexToRemove: number) => {
     setAttachments(attachments.filter((_, index) => index !== indexToRemove));
+  };
+
+  // 게시글 삭제
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    try {
+      await postAPI.deletePost(parseInt(id));
+      toast({
+        title: "성공",
+        description: "게시글이 삭제되었습니다.",
+      });
+      navigate('/board');
+    } catch (error: any) {
+      console.error('게시글 삭제 실패:', error);
+      
+      // 권한 관련 에러인지 확인
+      if (error.response?.status === 500 && error.response?.data?.includes("authorized")) {
+        toast({
+          title: "권한 없음",
+          description: "게시글을 삭제할 권한이 없습니다.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "오류",
+          description: "게시글 삭제에 실패했습니다.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,7 +173,7 @@ const BoardEdit = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center mb-8">
+      <div className="flex items-center justify-between mb-8">
         <Button 
           variant="ghost" 
           onClick={() => navigate(`/board/${id}`)}
@@ -154,9 +182,30 @@ const BoardEdit = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           돌아가기
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">문서 수정</h1>
-          <p className="text-muted-foreground">기존 문서를 수정해보세요.</p>
+        
+        <div className="flex space-x-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={isSubmitting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                삭제
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>게시글을 삭제하시겠습니까?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 되돌릴 수 없습니다. 게시글과 관련된 모든 데이터가 영구적으로 삭제됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                  삭제
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -201,44 +250,6 @@ const BoardEdit = () => {
                 {content.length}/5000자
               </p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>태그 (선택사항)</CardTitle>
-            <CardDescription>
-              문서 분류를 위한 태그를 추가하세요.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex space-x-2">
-              <Input
-                value={currentTag}
-                onChange={(e) => setCurrentTag(e.target.value)}
-                placeholder="태그 입력"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                disabled={isSubmitting}
-                maxLength={20}
-              />
-              <Button type="button" onClick={handleAddTag} disabled={isSubmitting}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="cursor-pointer">
-                    #{tag}
-                    <X 
-                      className="h-3 w-3 ml-1" 
-                      onClick={() => !isSubmitting && handleRemoveTag(tag)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 

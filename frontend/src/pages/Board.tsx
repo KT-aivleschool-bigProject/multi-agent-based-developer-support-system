@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { Search, Plus, MessageSquare, Eye, Paperclip, Loader2 } from 'lucide-react';
@@ -182,12 +181,6 @@ const Board = () => {
                       <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                         {post.content || '내용 없음'}
                       </p>
-
-                      <div className="flex flex-wrap gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          #문서
-                        </Badge>
-                      </div>
                     </CardContent>
                   </Link>
                 </Card>
