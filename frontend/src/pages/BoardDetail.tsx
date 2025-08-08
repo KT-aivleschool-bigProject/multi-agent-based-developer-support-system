@@ -36,6 +36,7 @@ interface Post {
   userId: number;
   userName?: string;
   createdAt: string;
+  updatedAt: string;
   viewCount: number;
   commentCount?: number;
 }
@@ -144,9 +145,14 @@ const BoardDetail = () => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInHours < 1) return '방금 전';
+    if (diffInSeconds < 60) return '방금 전';
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}시간 전`;
     
     const diffInDays = Math.floor(diffInHours / 24);
@@ -212,7 +218,9 @@ const BoardDetail = () => {
               </Avatar>
               <div>
                 <p className="font-medium">{post.userName || `사용자${post.userId}`}</p>
-                <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
+                <div className="text-sm text-muted-foreground">
+                  <p>{formatDate(post.createdAt)}</p>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-4">
