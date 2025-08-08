@@ -32,6 +32,7 @@ const BoardNew = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [isNavigatingAway, setIsNavigatingAway] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -79,6 +80,63 @@ const BoardNew = () => {
       setHasUnsavedChanges(true);
     }
   }, [title, content]);
+
+  // 브라우저 뒤로가기/앞으로가기 감지
+  useEffect(() => {
+    const handlePopState = async (event: PopStateEvent) => {
+      if (postId && !isPublished && !isNavigatingAway) {
+        event.preventDefault();
+        
+        // 사용자에게 확인 요청
+        const confirmed = window.confirm(
+          "게시글 작성 중입니다. 페이지를 나가시면 작성 중인 내용이 취소됩니다. 정말로 나가시겠습니까?"
+        );
+        
+        if (confirmed) {
+          setIsNavigatingAway(true);
+          await handleCancelWriting();
+        } else {
+          // 뒤로가기를 막고 현재 페이지에 머무름
+          window.history.pushState(null, '', window.location.pathname);
+        }
+      }
+    };
+
+    // 페이지 새로고침/닫기 감지
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (postId && !isPublished && hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = "게시글 작성 중입니다. 페이지를 나가시면 작성 중인 내용이 취소됩니다.";
+        return "게시글 작성 중입니다. 페이지를 나가시면 작성 중인 내용이 취소됩니다.";
+      }
+    };
+
+    // 페이지 이탈 시 자동 취소 처리
+    const handlePageHide = async () => {
+      if (postId && !isPublished && !isNavigatingAway) {
+        try {
+          await postAPI.cancelPostWriting(postId);
+          console.log('페이지 이탈 시 게시글 자동 취소 완료');
+        } catch (error) {
+          console.error('페이지 이탈 시 게시글 취소 실패:', error);
+        }
+      }
+    };
+
+    // 이벤트 리스너 등록
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+
+    // 초기 히스토리 상태 추가
+    window.history.pushState(null, '', window.location.pathname);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [postId, isPublished, hasUnsavedChanges, isNavigatingAway]);
 
   // 게시글 작성 취소
   const handleCancelWriting = async () => {
@@ -207,6 +265,7 @@ const BoardNew = () => {
         if (postData.status === 'PUBLISHED') {
           setIsPublished(true);
           setHasUnsavedChanges(false);
+          setIsNavigatingAway(true); // 저장 완료 후 네비게이션 플래그 설정
           toast({
             title: "성공",
             description: "문서가 성공적으로 게시되었습니다.",
@@ -373,15 +432,7 @@ const BoardNew = () => {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end space-x-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleCancelWriting}
-            disabled={isSubmitting || isPublished}
-          >
-            {isPublished ? '취소 불가' : '취소'}
-          </Button>
+        <div className="flex justify-end">
           <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
             {isSubmitting ? (
               <>
