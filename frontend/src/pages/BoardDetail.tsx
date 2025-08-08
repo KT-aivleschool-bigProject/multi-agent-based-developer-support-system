@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,20 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Eye, MessageSquare, Paperclip, Send, Heart, Share } from 'lucide-react';
+import { ArrowLeft, Eye, MessageSquare, Paperclip, Send, Heart, Share, Edit, Trash2, Loader2 } from 'lucide-react';
+import { postAPI } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Comment {
   id: number;
@@ -17,71 +30,86 @@ interface Comment {
   replies?: Comment[];
 }
 
+interface Post {
+  postId: number;
+  title: string;
+  content: string;
+  userId: number;
+  userName?: string;
+  createdAt: string;
+  viewCount: number;
+  commentCount?: number;
+}
+
 const BoardDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: 1,
-      content: "이 요구사항 명세서가 정말 상세하게 잘 작성되었네요. 특히 API 부분이 명확해서 개발하기 좋을 것 같습니다.",
-      author: "frontend_dev",
-      createdAt: "1시간 전"
-    },
-    {
-      id: 2,
-      content: "데이터베이스 스키마 부분에서 사용자 권한 관련 테이블 구조를 조금 더 보완하면 좋을 것 같습니다.",
-      author: "backend_dev",
-      createdAt: "30분 전"
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthor, setIsAuthor] = useState(false);
+
+  // 게시글 상세 정보 가져오기
+  const fetchPost = async () => {
+    if (!id) return;
+    
+    try {
+      setLoading(true);
+      const postData = await postAPI.getPost(parseInt(id));
+      setPost(postData);
+      setIsAuthor(user?.userId === postData.userId);
+    } catch (error) {
+      console.error('게시글 조회 실패:', error);
+      toast({
+        title: "오류",
+        description: "게시글을 불러오는데 실패했습니다.",
+        variant: "destructive",
+      });
+      navigate('/board');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  // 임시 데이터 (실제로는 API에서 가져올 것)
-  const post = {
-    id: parseInt(id || '1'),
-    title: "프로젝트 요구사항 명세서",
-    content: `# 프로젝트 요구사항 명세서
+  // 게시글 삭제
+  const handleDelete = async () => {
+    if (!id) return;
+    
+    try {
+      await postAPI.deletePost(parseInt(id));
+      toast({
+        title: "성공",
+        description: "게시글이 삭제되었습니다.",
+      });
+      navigate('/board');
+    } catch (error) {
+      console.error('게시글 삭제 실패:', error);
+      toast({
+        title: "오류",
+        description: "게시글 삭제에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
-## 개요
-새로운 웹 애플리케이션 개발을 위한 상세 요구사항 명세서입니다.
-
-## 주요 기능
-1. **사용자 관리**
-   - 회원가입/로그인 기능
-   - 사용자 프로필 관리
-   - 권한 기반 접근 제어
-
-2. **문서 관리**
-   - 문서 작성 및 편집
-   - 파일 첨부 기능
-   - 버전 관리
-
-3. **협업 기능**
-   - 댓글 시스템
-   - 실시간 알림
-   - 팀 워크스페이스
-
-## 기술 스택
-- Frontend: React, TypeScript, Tailwind CSS
-- Backend: Node.js, Express
-- Database: PostgreSQL
-- Authentication: JWT
-
-## 일정
-- 1주차: 기본 구조 설계
-- 2주차: 사용자 관리 기능 개발
-- 3주차: 문서 관리 기능 개발
-- 4주차: 협업 기능 개발
-- 5주차: 테스트 및 배포
-
-더 자세한 내용은 첨부된 문서를 참고해주세요.`,
-    author: "project_manager",
-    createdAt: "2시간 전",
-    tags: ["요구사항", "명세서", "프로젝트"],
-    views: 124,
-    comments: comments.length,
-    attachments: ["requirements.pdf", "wireframe.figma"]
+  // 게시글 수정 페이지로 이동
+  const handleEdit = async () => {
+    if (!id) return;
+    
+    try {
+      await postAPI.checkBeforeEditing(parseInt(id));
+      navigate(`/board/edit/${id}`);
+    } catch (error) {
+      console.error('수정 권한 확인 실패:', error);
+      toast({
+        title: "오류",
+        description: "게시글을 수정할 권한이 없습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddComment = () => {
@@ -90,7 +118,7 @@ const BoardDetail = () => {
     const comment: Comment = {
       id: Date.now(),
       content: newComment,
-      author: "current_user",
+      author: user?.name || "사용자",
       createdAt: "방금 전"
     };
 
@@ -103,9 +131,48 @@ const BoardDetail = () => {
     });
   };
 
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return '방금 전';
+    if (diffInHours < 24) return `${diffInHours}시간 전`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}일 전`;
+    
+    return date.toLocaleDateString('ko-KR');
+  };
+
+  useEffect(() => {
+    fetchPost();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!post) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">게시글을 찾을 수 없습니다.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="flex items-center mb-8">
+      <div className="flex items-center justify-between mb-8">
         <Button 
           variant="ghost" 
           onClick={() => navigate('/board')}
@@ -114,6 +181,37 @@ const BoardDetail = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           돌아가기
         </Button>
+        
+        {isAuthor && (
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm" onClick={handleEdit}>
+              <Edit className="h-4 w-4 mr-2" />
+              수정
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  삭제
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>게시글을 삭제하시겠습니까?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    이 작업은 되돌릴 수 없습니다. 게시글과 관련된 모든 데이터가 영구적으로 삭제됩니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+                    삭제
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        )}
       </div>
 
       {/* 문서 본문 */}
@@ -123,23 +221,25 @@ const BoardDetail = () => {
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary">
-                  {post.author[0].toUpperCase()}
+                  {post.userName ? post.userName[0].toUpperCase() : 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{post.author}</p>
-                <p className="text-sm text-muted-foreground">{post.createdAt}</p>
+                <p className="font-medium">{post.userName || `사용자${post.userId}`}</p>
+                <p className="text-sm text-muted-foreground">{formatDate(post.createdAt)}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                 <Eye className="h-4 w-4" />
-                <span>{post.views}</span>
+                <span>{post.viewCount}</span>
               </div>
-              <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                <MessageSquare className="h-4 w-4" />
-                <span>{post.comments}</span>
-              </div>
+              {post.commentCount !== undefined && (
+                <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>{post.commentCount}</span>
+                </div>
+              )}
               <Button variant="ghost" size="sm">
                 <Heart className="h-4 w-4 mr-1" />
                 좋아요
@@ -151,40 +251,26 @@ const BoardDetail = () => {
             </div>
           </div>
 
-          <CardTitle className="text-2xl mb-4">{post.title}</CardTitle>
+          <CardTitle className="text-2xl mb-4">{post.title || '제목 없음'}</CardTitle>
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags.map((tag, index) => (
-              <Badge key={index} variant="secondary">
-                #{tag}
-              </Badge>
-            ))}
+            <Badge variant="secondary">
+              #문서
+            </Badge>
           </div>
-
-          {post.attachments && post.attachments.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <Paperclip className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">첨부파일</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {post.attachments.map((file, index) => (
-                  <Badge key={index} variant="outline" className="cursor-pointer hover:bg-muted">
-                    {file}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
         </CardHeader>
         
         <CardContent>
           <div className="prose prose-sm max-w-none">
-            {post.content.split('\n').map((line, index) => (
-              <p key={index} className="mb-2 whitespace-pre-wrap">
-                {line}
-              </p>
-            ))}
+            {post.content ? (
+              post.content.split('\n').map((line, index) => (
+                <p key={index} className="mb-2 whitespace-pre-wrap">
+                  {line}
+                </p>
+              ))
+            ) : (
+              <p className="text-muted-foreground">내용이 없습니다.</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -201,7 +287,9 @@ const BoardDetail = () => {
           {/* 댓글 작성 */}
           <div className="flex space-x-4">
             <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-secondary">U</AvatarFallback>
+              <AvatarFallback className="bg-secondary">
+                {user?.name ? user.name[0].toUpperCase() : 'U'}
+              </AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-2">
               <Textarea

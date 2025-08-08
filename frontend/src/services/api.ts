@@ -17,6 +17,13 @@ api.interceptors.request.use(
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // JWT 토큰에서 userId 추출하여 헤더에 추가
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        config.headers['X-User-Id'] = payload.userId;
+      } catch (error) {
+        console.error('토큰 파싱 오류:', error);
+      }
     }
     return config;
   },
@@ -112,6 +119,55 @@ export const userAPI = {
   // 사용자 정보 수정
   updateProfile: async (data: any) => {
     const response = await api.put('/users/profile', data);
+    return response.data;
+  },
+};
+
+// 게시판 관련 API
+export const postAPI = {
+  // 게시글 작성 시작 (init)
+  startPostWriting: async () => {
+    const response = await api.post('/posts/init');
+    return response.data;
+  },
+
+  // 게시글 저장
+  savePost: async (postId: number, data: { title: string; content: string }) => {
+    const response = await api.patch(`/posts/${postId}/savepost`, data);
+    return response.data;
+  },
+
+  // 게시글 수정 전 본인확인
+  checkBeforeEditing: async (postId: number) => {
+    const response = await api.get(`/posts/${postId}/checkBeforeEditing`);
+    return response.data;
+  },
+
+  // 게시글 삭제
+  deletePost: async (postId: number) => {
+    const response = await api.delete(`/posts/${postId}/deletepost`);
+    return response.data;
+  },
+
+  // 게시글 상세조회
+  getPost: async (postId: number) => {
+    const response = await api.get(`/posts/${postId}`);
+    return response.data;
+  },
+
+  // 게시글 목록 조회
+  getPostList: async (page: number = 0, size: number = 10, searchKeyword?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      sort: 'postId,desc'
+    });
+    
+    if (searchKeyword) {
+      params.append('searchKeyword', searchKeyword);
+    }
+    
+    const response = await api.get(`/posts/list?${params.toString()}`);
     return response.data;
   },
 };
