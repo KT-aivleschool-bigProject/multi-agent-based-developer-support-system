@@ -115,10 +115,24 @@ spring:
           uri: http://notification:8080
           predicates:
             - Path=/notifications/**, 
-        - id: board
-          uri: http://board:8080
+        - id: post
+          uri: http://post:8080
           predicates:
-            - Path=/posts/**, /attachments/**, /comments/**, 
+            - Path=/posts/**
+          filters:
+            - JwtAuth
+        - id: attachment
+          uri: http://attachment:8080
+          predicates:
+            - Path=/attachments/**
+          filters:
+            - JwtAuth
+        - id: comment
+          uri: http://comment:8080
+          predicates:
+            - Path=/comments/**
+          filters:
+            - JwtAuth 
         - id: frontend
           uri: http://frontend:8080
           predicates:

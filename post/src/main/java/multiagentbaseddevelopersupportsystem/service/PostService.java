@@ -14,6 +14,7 @@ import multiagentbaseddevelopersupportsystem.domain.Post;
 import multiagentbaseddevelopersupportsystem.domain.PostDeleted;
 import multiagentbaseddevelopersupportsystem.domain.PostRepository;
 import multiagentbaseddevelopersupportsystem.domain.PostResponseDto;
+import multiagentbaseddevelopersupportsystem.domain.PostStatus;
 import multiagentbaseddevelopersupportsystem.domain.SavePostCommand;
 import multiagentbaseddevelopersupportsystem.domain.UserDto;
 import multiagentbaseddevelopersupportsystem.external.UserClient;
@@ -32,9 +33,23 @@ public class PostService {
             .content("")
             .viewCount(0)
             .userId(userId)
+            .status(PostStatus.DRAFT)
             .build();
 
         return postRepository.save(post).getPostId();
+    }
+
+    public void cancelPostWriting(Long userId, Long postId) {
+        Post post = postRepository.findById(postId)
+            .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+        
+        if (!post.getUserId().equals(userId)) {
+            throw new RuntimeException("게시글을 취소할 권한이 없습니다.");
+        }
+        
+        if (post.getStatus() == PostStatus.DRAFT) {
+            postRepository.delete(post);
+        }
     }
 
     public Long savePost(Long postId, SavePostCommand savePostCommand) {
@@ -45,7 +60,7 @@ public class PostService {
         }
         post.setTitle(savePostCommand.getTitle());
         post.setContent(savePostCommand.getContent());
-
+        post.setStatus(PostStatus.PUBLISHED);
         return postRepository.save(post).getPostId();
     }
 

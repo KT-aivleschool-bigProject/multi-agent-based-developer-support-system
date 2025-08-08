@@ -25,6 +25,13 @@ public class PostController {
         return ResponseEntity.status(201).body(postId);
     }
 
+    @DeleteMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancelPostWriting(@RequestHeader("X-User-Id") Long userId, 
+                                                @PathVariable(value = "id") Long postId) {
+        postService.cancelPostWriting(userId, postId);
+        return ResponseEntity.ok().build();
+    }
+
     @PatchMapping("/{id}/savepost")
     public ResponseEntity<Long> savePost(@PathVariable(value = "id") Long id, @RequestBody SavePostCommand savePostCommand) {
         Long postId = postService.savePost(id, savePostCommand);

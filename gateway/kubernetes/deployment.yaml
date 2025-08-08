@@ -16,6 +16,12 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: username/gateway:latest
+          image: bigproject.azurecr.io/gateway:v3
           ports:
             - containerPort: 8080
+          env:
+          - name: JWT_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: jwt-secret
+                key: jwt-secret-key
