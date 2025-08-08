@@ -55,6 +55,10 @@ public class Post  {
     @Column(name="user_id", nullable=false)
     private Long userId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name="status", nullable=false)
+    private PostStatus status;
+
     public static UserClient userClient() {
         UserClient userClient = PostApplication.applicationContext.getBean(
             UserClient.class
