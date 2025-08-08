@@ -17,13 +17,6 @@ api.interceptors.request.use(
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // JWT 토큰에서 userId 추출하여 헤더에 추가
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        config.headers['X-User-Id'] = payload.userId;
-      } catch (error) {
-        console.error('토큰 파싱 오류:', error);
-      }
     }
     return config;
   },
@@ -134,6 +127,12 @@ export const postAPI = {
   // 게시글 저장
   savePost: async (postId: number, data: { title: string; content: string }) => {
     const response = await api.patch(`/posts/${postId}/savepost`, data);
+    return response.data;
+  },
+
+  // 게시글 작성 취소
+  cancelPostWriting: async (postId: number) => {
+    const response = await api.delete(`/posts/${postId}/cancel`);
     return response.data;
   },
 

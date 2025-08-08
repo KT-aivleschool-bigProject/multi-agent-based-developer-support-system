@@ -9,6 +9,17 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Upload, FileText, Loader2 } from 'lucide-react';
 import { postAPI } from '@/services/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const BoardNew = () => {
   const navigate = useNavigate();
@@ -19,15 +30,19 @@ const BoardNew = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postId, setPostId] = useState<number | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setAttachments([...attachments, ...Array.from(e.target.files)]);
+      setHasUnsavedChanges(true);
     }
   };
 
   const handleRemoveFile = (indexToRemove: number) => {
     setAttachments(attachments.filter((_, index) => index !== indexToRemove));
+    setHasUnsavedChanges(true);
   };
 
   // 페이지 로드 시 게시글 초기화
@@ -37,6 +52,7 @@ const BoardNew = () => {
         setIsInitializing(true);
         const newPostId = await postAPI.startPostWriting();
         setPostId(newPostId);
+        setIsPublished(false); // 초기화 시 PUBLISHED 상태가 아님
         toast({
           title: "게시글 작성 준비 완료",
           description: "이제 게시글을 작성할 수 있습니다.",
@@ -56,6 +72,104 @@ const BoardNew = () => {
 
     initializePost();
   }, [navigate, toast]);
+
+  // 내용 변경 감지
+  useEffect(() => {
+    if (title.trim() || content.trim()) {
+      setHasUnsavedChanges(true);
+    }
+  }, [title, content]);
+
+  // 게시글 작성 취소
+  const handleCancelWriting = async () => {
+    if (!postId) {
+      navigate('/board');
+      return;
+    }
+
+    // 이미 게시된 상태라면 취소 불가
+    if (isPublished) {
+      toast({
+        title: "취소 불가",
+        description: "이미 게시된 게시글은 취소할 수 없습니다.",
+        variant: "destructive",
+      });
+      navigate('/board');
+      return;
+    }
+
+    try {
+      console.log('게시글 취소 시도:', { postId, isPublished });
+      
+      // 현재 게시글 상태 확인
+      try {
+        const postData = await postAPI.getPost(postId);
+        console.log('현재 게시글 상태:', postData);
+        
+        // 게시글이 이미 PUBLISHED 상태인지 확인
+        if (postData.status === 'PUBLISHED') {
+          setIsPublished(true);
+          toast({
+            title: "취소 불가",
+            description: "이미 게시된 게시글은 취소할 수 없습니다.",
+            variant: "destructive",
+          });
+          navigate('/board');
+          return;
+        }
+      } catch (statusError) {
+        console.log('게시글 상태 확인 실패:', statusError);
+        // 상태 확인에 실패해도 취소 시도는 계속
+      }
+      
+      await postAPI.cancelPostWriting(postId);
+      toast({
+        title: "작성 취소",
+        description: "게시글 작성이 취소되었습니다.",
+      });
+      navigate('/board');
+    } catch (error: any) {
+      console.error('게시글 취소 실패:', error);
+      console.error('에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        config: error.config
+      });
+      
+      // 에러 응답에서 상세 정보 추출
+      let errorMessage = "게시글 취소에 실패했습니다.";
+      
+      if (error.response?.data) {
+        // 백엔드에서 전달한 에러 메시지가 있으면 사용
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      } else if (error.message) {
+        // 네트워크 에러 등
+        errorMessage = error.message;
+      }
+      
+      // 400 에러인 경우 특별한 메시지
+      if (error.response?.status === 400) {
+        errorMessage = "게시글이 이미 게시되어 취소할 수 없습니다.";
+      }
+      
+      toast({
+        title: "오류",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // 에러가 발생해도 게시판으로 이동
+      navigate('/board');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,16 +195,35 @@ const BoardNew = () => {
     setIsSubmitting(true);
 
     try {
-      // 게시글 저장
+      // 게시글 저장 (백엔드에서 PUBLISHED 상태로 변경)
       await postAPI.savePost(postId, {
         title: title.trim(),
         content: content.trim()
       });
 
-      toast({
-        title: "성공",
-        description: "문서가 성공적으로 작성되었습니다.",
-      });
+      // 저장 후 게시글 상태 확인
+      try {
+        const postData = await postAPI.getPost(postId);
+        if (postData.status === 'PUBLISHED') {
+          setIsPublished(true);
+          setHasUnsavedChanges(false);
+          toast({
+            title: "성공",
+            description: "문서가 성공적으로 게시되었습니다.",
+          });
+        } else {
+          toast({
+            title: "성공",
+            description: "문서가 성공적으로 저장되었습니다.",
+          });
+        }
+      } catch (statusError) {
+        console.log('게시글 상태 확인 실패:', statusError);
+        toast({
+          title: "성공",
+          description: "문서가 성공적으로 저장되었습니다.",
+        });
+      }
       
       navigate('/board');
     } catch (error) {
@@ -108,14 +241,35 @@ const BoardNew = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center mb-8">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/board')}
-          className="mr-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          돌아가기
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="mr-4"
+              disabled={isSubmitting}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              돌아가기
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>작성을 취소하시겠습니까?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {hasUnsavedChanges 
+                  ? "저장되지 않은 변경사항이 있습니다. 정말로 작성을 취소하시겠습니까?"
+                  : "게시글 작성을 취소하시겠습니까?"
+                }
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>계속 작성</AlertDialogCancel>
+              <AlertDialogAction onClick={handleCancelWriting} className="bg-destructive text-destructive-foreground">
+                작성 취소
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <div>
           <h1 className="text-3xl font-bold">문서 작성</h1>
           <p className="text-muted-foreground">새로운 프로젝트 문서를 작성해보세요.</p>
@@ -223,10 +377,10 @@ const BoardNew = () => {
           <Button 
             type="button" 
             variant="outline" 
-            onClick={() => navigate('/board')}
-            disabled={isSubmitting}
+            onClick={handleCancelWriting}
+            disabled={isSubmitting || isPublished}
           >
-            취소
+            {isPublished ? '취소 불가' : '취소'}
           </Button>
           <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
             {isSubmitting ? (
