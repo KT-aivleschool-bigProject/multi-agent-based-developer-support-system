@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
 import { Search, Plus, MessageSquare, Eye, Paperclip, Loader2 } from 'lucide-react';
-import { postAPI } from '@/services/api';
+import { postAPI, commentAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -38,7 +38,21 @@ const Board = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [commentsCount, setCommentsCount] = useState<{[key: number]: number}>({});
   const { user } = useAuth();
+
+  // 댓글 수 가져오기
+  const fetchCommentsCount = async (postId: number) => {
+    try {
+      const comments = await commentAPI.getCommentsByPostId(postId);
+      setCommentsCount(prev => ({
+        ...prev,
+        [postId]: comments.length
+      }));
+    } catch (error) {
+      console.error(`게시글 ${postId} 댓글 수 조회 실패:`, error);
+    }
+  };
 
   // 게시글 목록 가져오기
   const fetchPosts = async (page: number = 0, keyword?: string) => {
@@ -49,6 +63,11 @@ const Board = () => {
       setTotalPages(response.totalPages);
       setTotalElements(response.totalElements);
       setCurrentPage(response.number);
+      
+      // 각 게시글의 댓글 수 조회
+      response.content.forEach(post => {
+        fetchCommentsCount(post.postId);
+      });
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
       toast({
@@ -171,12 +190,10 @@ const Board = () => {
                             <Eye className="h-3 w-3" />
                             <span>{post.viewCount}</span>
                           </div>
-                          {post.commentCount !== undefined && (
-                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                              <MessageSquare className="h-3 w-3" />
-                              <span>{post.commentCount}</span>
-                            </div>
-                          )}
+                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{commentsCount[post.postId] || 0}</span>
+                          </div>
                         </div>
                       </div>
 
