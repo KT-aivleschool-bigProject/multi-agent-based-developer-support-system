@@ -1,81 +1,121 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Link } from 'react-router-dom';
-import { Search, Plus, MessageSquare, Eye, Paperclip } from 'lucide-react';
+import { Search, Plus, MessageSquare, Eye, Paperclip, Loader2 } from 'lucide-react';
+import { postAPI, commentAPI } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface Post {
-  id: number;
+  postId: number;
   title: string;
   content: string;
-  author: string;
+  userId: number;
+  userName?: string;
   createdAt: string;
-  tags: string[];
-  views: number;
-  comments: number;
-  attachments?: string[];
+  viewCount: number;
+  commentCount?: number;
+}
+
+interface PostListResponse {
+  content: Post[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
 }
 
 const Board = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [commentsCount, setCommentsCount] = useState<{[key: number]: number}>({});
+  const { user } = useAuth();
 
-  const posts: Post[] = [
-    {
-      id: 1,
-      title: "프로젝트 요구사항 명세서",
-      content: "새로운 웹 애플리케이션 개발을 위한 상세 요구사항 명세서입니다. 기능 정의, 기술 스택, 일정 등이 포함되어 있습니다.",
-      author: "project_manager",
-      createdAt: "2시간 전",
-      tags: ["요구사항", "명세서", "프로젝트"],
-      views: 124,
-      comments: 8,
-      attachments: ["requirements.pdf", "wireframe.figma"]
-    },
-    {
-      id: 2,
-      title: "API 설계 문서",
-      content: "RESTful API 설계 가이드라인과 엔드포인트 명세를 정리한 문서입니다.",
-      author: "backend_dev",
-      createdAt: "4시간 전",
-      tags: ["API", "설계", "백엔드"],
-      views: 89,
-      comments: 15,
-      attachments: ["api_spec.json"]
-    },
-    {
-      id: 3,
-      title: "UI/UX 디자인 가이드",
-      content: "프로젝트의 일관된 디자인을 위한 컴포넌트 라이브러리와 스타일 가이드입니다.",
-      author: "ui_designer",
-      createdAt: "1일 전",
-      tags: ["디자인", "UI", "가이드라인"],
-      views: 234,
-      comments: 12,
-      attachments: ["design_system.sketch", "components.pdf"]
-    },
-    {
-      id: 4,
-      title: "데이터베이스 스키마 설계",
-      content: "프로젝트에서 사용할 데이터베이스 테이블 구조와 관계도를 정의한 문서입니다.",
-      author: "database_admin",
-      createdAt: "2일 전",
-      tags: ["데이터베이스", "스키마", "설계"],
-      views: 156,
-      comments: 6,
-      attachments: ["schema.sql", "erd_diagram.png"]
+  // 댓글 수 가져오기
+  const fetchCommentsCount = async (postId: number) => {
+    try {
+      const comments = await commentAPI.getCommentsByPostId(postId);
+      setCommentsCount(prev => ({
+        ...prev,
+        [postId]: comments.length
+      }));
+    } catch (error) {
+      console.error(`게시글 ${postId} 댓글 수 조회 실패:`, error);
     }
-  ];
+  };
 
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesSearch;
-  });
+  // 게시글 목록 가져오기
+  const fetchPosts = async (page: number = 0, keyword?: string) => {
+    try {
+      setLoading(true);
+      const response: PostListResponse = await postAPI.getPostList(page, 10, keyword);
+      setPosts(response.content);
+      setTotalPages(response.totalPages);
+      setTotalElements(response.totalElements);
+      setCurrentPage(response.number);
+      
+      // 각 게시글의 댓글 수 조회
+      response.content.forEach(post => {
+        fetchCommentsCount(post.postId);
+      });
+    } catch (error) {
+      console.error('게시글 목록 조회 실패:', error);
+      toast({
+        title: "오류",
+        description: "게시글 목록을 불러오는데 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 검색 처리
+  const handleSearch = () => {
+    setCurrentPage(0);
+    fetchPosts(0, searchTerm);
+  };
+
+  // 페이지 변경
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchPosts(page, searchTerm);
+  };
+
+  // 초기 로드
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // 날짜 포맷팅
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return '방금 전';
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}분 전`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}시간 전`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}일 전`;
+    
+    return date.toLocaleDateString('ko-KR');
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -83,7 +123,7 @@ const Board = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">문서 게시판</h1>
           <p className="text-muted-foreground">
-            프로젝트 문서를 공유하고 협업해보세요.
+            프로젝트 문서를 공유하고 협업해보세요. (총 {totalElements}개)
           </p>
         </div>
         <Button asChild className="mt-4 lg:mt-0">
@@ -102,14 +142,20 @@ const Board = () => {
               <CardTitle className="text-sm">검색</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="문서 검색..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="문서 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    className="pl-10"
+                  />
+                </div>
+                <Button onClick={handleSearch} className="w-full" size="sm">
+                  검색
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -117,74 +163,114 @@ const Board = () => {
 
         {/* 게시글 목록 */}
         <div className="flex-1 space-y-4">
-          {filteredPosts.map((post) => (
-            <Card key={post.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <Link to={`/board/${post.id}`}>
-                <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-xs">
-                        {post.author[0].toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{post.author}</p>
-                      <p className="text-xs text-muted-foreground">{post.createdAt}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                      <Eye className="h-3 w-3" />
-                      <span>{post.views}</span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                      <MessageSquare className="h-3 w-3" />
-                      <span>{post.comments}</span>
-                    </div>
-                  </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : posts.length > 0 ? (
+            <>
+              {posts.map((post) => (
+                <Card key={post.postId} className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <Link to={`/board/${post.postId}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="bg-primary text-xs">
+                              {post.userName ? post.userName[0].toUpperCase() : 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{post.userName || `사용자${post.userId}`}</p>
+                            <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                            <Eye className="h-3 w-3" />
+                            <span>{post.viewCount}</span>
+                          </div>
+                          <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{commentsCount[post.postId] || 0}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg font-semibold mb-2 hover:text-primary transition-colors">
+                        {post.title || '제목 없음'}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+                        {post.content || '내용 없음'}
+                      </p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+
+              {/* 페이징 */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center space-x-2 mt-8">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const currentGroup = Math.floor(currentPage / 5);
+                      const prevGroup = Math.max(0, currentGroup - 1);
+                      const targetPage = prevGroup * 5;
+                      handlePageChange(targetPage);
+                    }}
+                    disabled={currentPage === 0}
+                  >
+                    이전
+                  </Button>
+                  
+                  {/* 페이지 번호 계산 로직 개선 - 5페이지씩 그룹으로 표시 */}
+                  {(() => {
+                    const pages = [];
+                    const maxVisiblePages = 5;
+                    // 현재 페이지가 속한 그룹 계산 (0부터 시작)
+                    const currentGroup = Math.floor(currentPage / maxVisiblePages);
+                    const startPage = currentGroup * maxVisiblePages;
+                    const endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+                    
+                    for (let i = startPage; i <= endPage; i++) {
+                      pages.push(i);
+                    }
+                    
+                    return pages.map((pageNum) => (
+                      <Button
+                        key={`page-${pageNum}`}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    ));
+                  })()}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const currentGroup = Math.floor(currentPage / 5);
+                      const nextGroup = currentGroup + 1;
+                      const targetPage = Math.min(totalPages - 1, nextGroup * 5);
+                      handlePageChange(targetPage);
+                    }}
+                    disabled={currentPage >= totalPages - 1}
+                  >
+                    다음
+                  </Button>
                 </div>
-
-                <h3 className="text-lg font-semibold mb-2 hover:text-primary transition-colors">
-                  {post.title}
-                </h3>
-                <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-                  {post.content}
-                </p>
-
-                {post.attachments && post.attachments.length > 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Paperclip className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground">첨부파일</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {post.attachments.map((file, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {file}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  {post.tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      #{tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-              </Link>
-            </Card>
-          ))}
-
-          {filteredPosts.length === 0 && (
+              )}
+            </>
+          ) : (
             <Card>
               <CardContent className="p-12 text-center">
                 <p className="text-muted-foreground">
-                  검색 결과가 없습니다.
+                  {searchTerm ? '검색 결과가 없습니다.' : '게시글이 없습니다.'}
                 </p>
               </CardContent>
             </Card>

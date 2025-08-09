@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Board from "./pages/Board";
 import BoardNew from "./pages/BoardNew";
 import BoardDetail from "./pages/BoardDetail";
+import BoardEdit from "./pages/BoardEdit";
 import Profile from "./pages/Profile";
 import Calendar from "./pages/Calendar";
 import CodeManagement from "./pages/CodeManagement";
@@ -21,6 +22,7 @@ import TaskManagement from "./pages/TaskManagement";
 import ProjectManagement from "./pages/ProjectManagement";
 import ProjectCreate from "./pages/ProjectCreate";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +63,13 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <BoardDetail />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/board/edit/:id" element={
+              <ProtectedRoute>
+                <Layout>
+                  <BoardEdit />
                 </Layout>
               </ProtectedRoute>
             } />
@@ -107,7 +116,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/privacy" element={<Privacy />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/terms" element={<Terms />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
