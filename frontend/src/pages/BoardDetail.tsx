@@ -309,12 +309,10 @@ const BoardDetail = () => {
                 <Eye className="h-4 w-4" />
                 <span>{post.viewCount}</span>
               </div>
-              {post.commentCount !== undefined && (
-                <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>{post.commentCount}</span>
-                </div>
-              )}
+              <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+                <MessageSquare className="h-4 w-4" />
+                <span>{comments.length}</span>
+              </div>
             </div>
           </div>
 
