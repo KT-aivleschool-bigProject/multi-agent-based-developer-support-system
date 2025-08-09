@@ -171,4 +171,31 @@ export const postAPI = {
   },
 };
 
+// 댓글 관련 API
+export const commentAPI = {
+  // 댓글 작성
+  createComment: async (data: { content: string; postId: number }) => {
+    const response = await api.post('/comments', data);
+    return response.data;
+  },
+
+  // 댓글 수정
+  updateComment: async (commentId: number, data: { content: string }) => {
+    const response = await api.put(`/comments/${commentId}`, data);
+    return response.data;
+  },
+
+  // 댓글 삭제
+  deleteComment: async (commentId: number) => {
+    const response = await api.delete(`/comments/${commentId}`);
+    return response.data;
+  },
+
+  // 게시글별 댓글 목록 조회
+  getCommentsByPostId: async (postId: number) => {
+    const response = await api.get(`/comments/post/${postId}`);
+    return response.data;
+  },
+};
+
 export default api; 
