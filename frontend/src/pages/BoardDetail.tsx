@@ -6,27 +6,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Eye, MessageSquare, Paperclip, Send, Edit, Trash2, Loader2 } from 'lucide-react';
-import { postAPI } from '@/services/api';
+import { ArrowLeft, Eye, MessageSquare, Send, Edit, Loader2, Edit2, Trash2, Check, X } from 'lucide-react';
+import { postAPI, commentAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 
-interface Comment {
-  id: number;
+interface CommentData {
+  commentId: number;
   content: string;
-  author: string;
+  userName: string;
   createdAt: string;
-  replies?: Comment[];
+  updatedAt: string;
+  postId: number;
 }
 
 interface Post {
@@ -47,7 +37,11 @@ const BoardDetail = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [editingComment, setEditingComment] = useState<number | null>(null);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [comments, setComments] = useState<CommentData[]>([]);
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthor, setIsAuthor] = useState(false);
@@ -122,23 +116,109 @@ const BoardDetail = () => {
     }
   };
 
-  const handleAddComment = () => {
-    if (!newComment.trim()) return;
-
-    const comment: Comment = {
-      id: Date.now(),
-      content: newComment,
-      author: user?.name || "사용자",
-      createdAt: "방금 전"
-    };
-
-    setComments([...comments, comment]);
-    setNewComment('');
+  // 댓글 목록 가져오기
+  const fetchComments = async () => {
+    if (!id) return;
     
-    toast({
-      title: "성공",
-      description: "댓글이 작성되었습니다.",
-    });
+    try {
+      setLoadingComments(true);
+      const commentsData = await commentAPI.getCommentsByPostId(parseInt(id));
+      setComments(commentsData);
+    } catch (error) {
+      console.error('댓글 조회 실패:', error);
+      toast({
+        title: "오류",
+        description: "댓글을 불러오는데 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  // 댓글 작성
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !id) return;
+
+    try {
+      setSubmittingComment(true);
+      await commentAPI.createComment({
+        content: newComment.trim(),
+        postId: parseInt(id)
+      });
+      
+      setNewComment('');
+      await fetchComments(); // 댓글 목록 새로고침
+      
+      toast({
+        title: "성공",
+        description: "댓글이 작성되었습니다.",
+      });
+    } catch (error) {
+      console.error('댓글 작성 실패:', error);
+      toast({
+        title: "오류",
+        description: "댓글 작성에 실패했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const handleEditComment = (commentId: number, content: string) => {
+    setEditingComment(commentId);
+    setEditContent(content);
+  };
+
+  const handleSaveEdit = async (commentId: number) => {
+    if (!editContent.trim()) return;
+
+    try {
+      await commentAPI.updateComment(commentId, {
+        content: editContent.trim()
+      });
+      
+      setEditingComment(null);
+      setEditContent('');
+      await fetchComments(); // 댓글 목록 새로고침
+      
+      toast({
+        title: "성공",
+        description: "댓글이 수정되었습니다.",
+      });
+    } catch (error) {
+      console.error('댓글 수정 실패:', error);
+      toast({
+        title: "오류",
+        description: "댓글 수정에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingComment(null);
+    setEditContent('');
+  };
+
+  const handleDeleteComment = async (commentId: number) => {
+    try {
+      await commentAPI.deleteComment(commentId);
+      await fetchComments(); // 댓글 목록 새로고침
+      
+      toast({
+        title: "성공",
+        description: "댓글이 삭제되었습니다.",
+      });
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error);
+      toast({
+        title: "오류",
+        description: "댓글 삭제에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
   // 날짜 포맷팅
@@ -163,6 +243,7 @@ const BoardDetail = () => {
 
   useEffect(() => {
     fetchPost();
+    fetchComments();
   }, [id]);
 
   if (loading) {
@@ -279,8 +360,15 @@ const BoardDetail = () => {
                 className="min-h-[80px]"
               />
               <div className="flex justify-end">
-                <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-                  <Send className="h-4 w-4 mr-2" />
+                <Button 
+                  onClick={handleAddComment} 
+                  disabled={!newComment.trim() || submittingComment}
+                >
+                  {submittingComment ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
                   댓글 작성
                 </Button>
               </div>
@@ -291,22 +379,82 @@ const BoardDetail = () => {
 
           {/* 댓글 목록 */}
           <div className="space-y-4">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex space-x-4">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary">
-                    {comment.author[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="font-medium text-sm">{comment.author}</span>
-                    <span className="text-xs text-muted-foreground">{comment.createdAt}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-2">{comment.content}</p>
-                </div>
+            {loadingComments ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
-            ))}
+            ) : (
+              comments.map((comment) => (
+                <div key={comment.commentId} className="flex space-x-4">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary">
+                      {comment.userName ? comment.userName[0].toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-sm">{comment.userName || '익명'}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                      </div>
+                      {comment.userName === user?.name && (
+                        <div className="flex space-x-1">
+                          {editingComment === comment.commentId ? (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleSaveEdit(comment.commentId)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Check className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={handleCancelEdit}
+                                className="h-6 w-6 p-0"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleEditComment(comment.commentId, comment.content)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleDeleteComment(comment.commentId)}
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {editingComment === comment.commentId ? (
+                      <Textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        className="min-h-[60px] mb-2"
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground mb-2">{comment.content}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {comments.length === 0 && (
