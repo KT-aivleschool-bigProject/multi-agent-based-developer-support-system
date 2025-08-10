@@ -52,7 +52,7 @@
 			<artifactId>spring-boot-starter-hateoas</artifactId>
 		</dependency>
 
-		<!-- Database -->
+		<!-- H2 Database -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -146,7 +146,6 @@
 			<version>8.0.33</version>
 		</dependency>
 
-		<!-- Azure MySQL 연결을 위한 SSL 지원 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
