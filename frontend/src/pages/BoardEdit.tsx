@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Upload, FileText, Loader2, Trash2 } from 'lucide-react';
-import { postAPI } from '@/services/api';
+import { postAPI, attachmentAPI } from '@/services/api';
+import FileAttachment from '@/components/FileAttachment';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +21,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+interface Attachment {
+  fileId: number;
+  postId: number;
+  originalName: string;
+  storedName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
+}
 
 interface Post {
   postId: number;
@@ -37,13 +49,14 @@ const BoardEdit = () => {
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [post, setPost] = useState<Post | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [originalTitle, setOriginalTitle] = useState('');
   const [originalContent, setOriginalContent] = useState('');
+  const [originalAttachments, setOriginalAttachments] = useState<Attachment[]>([]);
 
   // 게시글 정보 가져오기
   const fetchPost = async () => {
@@ -57,6 +70,16 @@ const BoardEdit = () => {
       setContent(postData.content || '');
       setOriginalTitle(postData.title || '');
       setOriginalContent(postData.content || '');
+      
+      // 첨부파일 정보 가져오기
+      try {
+        const attachmentsData = await attachmentAPI.getFilesByPostId(parseInt(id));
+        setAttachments(attachmentsData);
+        setOriginalAttachments(attachmentsData);
+      } catch (error) {
+        console.error('첨부파일 조회 실패:', error);
+        // 첨부파일 조회 실패는 게시글 편집에 영향을 주지 않음
+      }
     } catch (error) {
       console.error('게시글 조회 실패:', error);
       toast({
@@ -70,26 +93,93 @@ const BoardEdit = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setAttachments([...attachments, ...Array.from(e.target.files)]);
-      setHasUnsavedChanges(true);
+  // 첨부파일 변경 처리
+  const handleAttachmentsChange = (newAttachments: Attachment[]) => {
+    setAttachments(newAttachments);
+    setHasUnsavedChanges(true);
+  };
+
+  // 첨부파일 업로드 처리
+  const uploadNewAttachments = async (): Promise<void> => {
+    const newAttachments = attachments.filter(att => att.fileUrl.startsWith('blob:'));
+    if (newAttachments.length === 0) return;
+
+    const uploadPromises = newAttachments.map(async (attachment) => {
+      try {
+        // blob URL에서 File 객체 추출
+        const response = await fetch(attachment.fileUrl);
+        const file = await response.blob();
+        const fileName = attachment.originalName;
+        
+        // File 객체 생성
+        const fileObj = new File([file], fileName, { type: attachment.fileType });
+        
+        // 실제 업로드
+        const uploadedAttachment = await attachmentAPI.uploadFile(fileObj, parseInt(id!));
+        
+        // blob URL 정리
+        URL.revokeObjectURL(attachment.fileUrl);
+        
+        return uploadedAttachment;
+      } catch (error) {
+        console.error('파일 업로드 실패:', error);
+        throw new Error(`${attachment.originalName} 업로드에 실패했습니다.`);
+      }
+    });
+
+    try {
+      await Promise.all(uploadPromises);
+      toast({
+        title: "파일 업로드 완료",
+        description: "새로 추가된 첨부파일이 성공적으로 업로드되었습니다.",
+      });
+    } catch (error) {
+      console.error('첨부파일 업로드 실패:', error);
+      throw error;
     }
   };
 
-  const handleRemoveFile = (indexToRemove: number) => {
-    setAttachments(attachments.filter((_, index) => index !== indexToRemove));
-    setHasUnsavedChanges(true);
+  // 첨부파일 삭제 처리
+  const deleteRemovedAttachments = async (): Promise<void> => {
+    const removedAttachments = originalAttachments.filter(
+      original => !attachments.some(current => current.fileId === original.fileId)
+    );
+
+    if (removedAttachments.length === 0) return;
+
+    const deletePromises = removedAttachments.map(async (attachment) => {
+      try {
+        await attachmentAPI.deleteFile(attachment.fileId);
+      } catch (error) {
+        console.error('파일 삭제 실패:', error);
+        throw new Error(`${attachment.originalName} 삭제에 실패했습니다.`);
+      }
+    });
+
+    try {
+      await Promise.all(deletePromises);
+      toast({
+        title: "파일 삭제 완료",
+        description: "제거된 첨부파일이 성공적으로 삭제되었습니다.",
+      });
+    } catch (error) {
+      console.error('첨부파일 삭제 실패:', error);
+      throw error;
+    }
   };
 
   // 내용 변경 감지
   useEffect(() => {
-    if (title !== originalTitle || content !== originalContent) {
+    const titleChanged = title !== originalTitle;
+    const contentChanged = content !== originalContent;
+    const attachmentsChanged = JSON.stringify(attachments) !== JSON.stringify(originalAttachments);
+    
+    if (titleChanged || contentChanged || attachmentsChanged) {
       setHasUnsavedChanges(true);
     } else {
       setHasUnsavedChanges(false);
     }
-  }, [title, content, originalTitle, originalContent]);
+  }, [title, content, attachments, originalTitle, originalContent, originalAttachments]);
 
   // 게시글 삭제
   const handleDelete = async () => {
@@ -104,26 +194,22 @@ const BoardEdit = () => {
       navigate('/board');
     } catch (error: any) {
       console.error('게시글 삭제 실패:', error);
-      
-      // 권한 관련 에러인지 확인
-      if (error.response?.status === 500 && error.response?.data?.includes("authorized")) {
-        toast({
-          title: "권한 없음",
-          description: "게시글을 삭제할 권한이 없습니다.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "오류",
-          description: "게시글 삭제에 실패했습니다.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "오류",
+        description: "게시글 삭제에 실패했습니다.",
+        variant: "destructive",
+      });
     }
   };
 
-  // 수정 취소 (단순히 페이지를 벗어남)
+  // 편집 취소
   const handleCancelEdit = () => {
+    if (hasUnsavedChanges) {
+      const confirmed = window.confirm(
+        "저장되지 않은 변경사항이 있습니다. 정말로 편집을 취소하시겠습니까?"
+      );
+      if (!confirmed) return;
+    }
     navigate(`/board/${id}`);
   };
 
@@ -139,21 +225,22 @@ const BoardEdit = () => {
       return;
     }
 
-    if (!id) return;
-
     setIsSubmitting(true);
 
     try {
-      // 게시글 저장
-      await postAPI.savePost(parseInt(id), {
+      // 첨부파일 처리
+      await deleteRemovedAttachments();
+      await uploadNewAttachments();
+
+      // 게시글 수정
+      await postAPI.savePost(parseInt(id!), {
         title: title.trim(),
         content: content.trim()
       });
 
-      setHasUnsavedChanges(false);
       toast({
         title: "성공",
-        description: "문서가 성공적으로 수정되었습니다.",
+        description: "게시글이 성공적으로 수정되었습니다.",
       });
       
       navigate(`/board/${id}`);
@@ -161,7 +248,7 @@ const BoardEdit = () => {
       console.error('게시글 수정 실패:', error);
       toast({
         title: "오류",
-        description: "문서 수정에 실패했습니다. 다시 시도해주세요.",
+        description: error instanceof Error ? error.message : "게시글 수정에 실패했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     } finally {
@@ -196,40 +283,19 @@ const BoardEdit = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="flex items-center justify-between mb-8">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="mr-4"
-              disabled={isSubmitting}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              돌아가기
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>수정을 취소하시겠습니까?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {hasUnsavedChanges 
-                  ? "저장되지 않은 변경사항이 있습니다. 정말로 수정을 취소하시겠습니까?"
-                  : "게시글 수정을 취소하시겠습니까?"
-                }
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>계속 수정</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCancelEdit}>
-                수정 취소
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button 
+          variant="ghost" 
+          onClick={handleCancelEdit}
+          className="mr-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          돌아가기
+        </Button>
         
         <div className="flex space-x-2">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={isSubmitting}>
+              <Button variant="destructive" size="sm">
                 <Trash2 className="h-4 w-4 mr-2" />
                 삭제
               </Button>
@@ -252,7 +318,12 @@ const BoardEdit = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">문서 수정</h1>
+        <p className="text-muted-foreground">기존 문서를 수정하세요.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6 mt-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -296,49 +367,14 @@ const BoardEdit = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Upload className="h-5 w-5 mr-2" />
-              첨부파일 (선택사항)
-            </CardTitle>
-            <CardDescription>
-              문서와 관련된 파일을 첨부하세요. (최대 10MB)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Input
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            {attachments.length > 0 && (
-              <div className="space-y-2">
-                <Separator />
-                <p className="text-sm font-medium">첨부된 파일:</p>
-                {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">{file.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => !isSubmitting && handleRemoveFile(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* 파일 첨부 컴포넌트 */}
+        <FileAttachment
+          postId={parseInt(id!)}
+          attachments={attachments}
+          onAttachmentsChange={handleAttachmentsChange}
+          isEditing={true}
+          disabled={isSubmitting}
+        />
 
         <div className="flex justify-end space-x-4">
           <Button 
@@ -349,14 +385,17 @@ const BoardEdit = () => {
           >
             취소
           </Button>
-          <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || !title.trim() || !content.trim()}
+          >
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 수정 중...
               </>
             ) : (
-              '문서 수정'
+              '수정 완료'
             )}
           </Button>
         </div>
