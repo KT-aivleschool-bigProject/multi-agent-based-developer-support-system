@@ -198,4 +198,41 @@ export const commentAPI = {
   },
 };
 
+// 첨부파일 관련 API
+export const attachmentAPI = {
+  // 파일 업로드
+  uploadFile: async (file: File, postId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('postId', postId.toString());
+    
+    const response = await api.post('/attachments/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // 게시글별 첨부파일 목록 조회
+  getFilesByPostId: async (postId: number) => {
+    const response = await api.get(`/attachments/post/${postId}`);
+    return response.data;
+  },
+
+  // 파일 다운로드
+  downloadFile: async (filename: string) => {
+    const response = await api.get(`/attachments/download/${filename}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // 파일 삭제
+  deleteFile: async (fileId: number) => {
+    const response = await api.delete(`/attachments/${fileId}`);
+    return response.data;
+  },
+};
+
 export default api; 
