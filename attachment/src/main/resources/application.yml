@@ -1,28 +1,39 @@
-server:
-  port: 8080
-
 spring:
   application:
     name: attachment
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
       enabled: true
 
+logging:
+  level:
+    org.hibernate.type: trace
+    org.springframework.cloud: debug
+
 ---
+server:
+  port: 8091
 
 spring:
   profiles: default
+  autoconfigure:
+    exclude:
+      - com.azure.spring.autoconfigure.storage.blob.BlobStorageAutoConfiguration
+      - com.azure.spring.autoconfigure.storage.StorageAutoConfiguration
+
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:testdb
     username: sa
     password: 
+
   h2:
     console:
       enabled: true
       path: /h2-console
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -61,25 +72,18 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
-logging:
-  level:
-    org.hibernate.type: trace
-    org.springframework.cloud: debug
-
-
-server:
-  port: 8091
-
 ---
+server:
+  port: 8080
 
 spring:
   profiles: docker
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: ${AZURE_MYSQL_URL:jdbc:mysql://your-mysql-server.mysql.database.azure.com:3306/attachment_db?useSSL=true&requireSSL=true&serverTimezone=UTC}
-    username: ${AZURE_MYSQL_USERNAME:your-username}
-    password: ${AZURE_MYSQL_PASSWORD:your-password}
+    url: ${AZURE_MYSQL_URL}
+    username: ${AZURE_MYSQL_USERNAME}
+    password: ${AZURE_MYSQL_PASSWORD}
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -89,7 +93,7 @@ spring:
       
   jpa:
     hibernate:
-      ddl-auto: validate  # 프로덕션에서는 validate 사용
+      ddl-auto: validate  
     show-sql: false
     properties:
       hibernate:
@@ -102,7 +106,7 @@ spring:
     stream:
       kafka:
         binder:
-          brokers: my-kafka:9092
+          brokers: kafka:9092
         streams:
           binder:
             configuration:
@@ -119,22 +123,32 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: "health"
+          base-path: /management   
+      endpoint:
+        health:
+          show-details: when-authorized
+          show-components: when-authorized
+      security:
+        enabled: true      
 azure:
   storage:
     account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
     account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
-    container-name: ${AZURE_STORAGE_CONTAINER_NAME:attachments}
-    endpoint: https://${azure.storage.account-name}.blob.core.windows.net
+    container-name: ${AZURE_STORAGE_CONTAINER_NAME}
 
 file:
   storage:
     type: azure
+    max-file-size: 100MB        
+    allowed-extensions: jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,mp4,avi,mov
+    path-prefix: uploads/       
+    public-access: false       
+    cdn-enabled: true          
 
-logging:
-  level:
-    root: INFO
-    multiagentbaseddevelopersupportsystem: INFO
-    com.azure: WARN
-    org.springframework.jdbc: DEBUG
  
 
