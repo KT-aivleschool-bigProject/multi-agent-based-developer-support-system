@@ -4,11 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Search, Plus, MessageSquare, Eye, Paperclip, Loader2 } from 'lucide-react';
-import { postAPI, commentAPI } from '@/services/api';
+import { postAPI, commentAPI, attachmentAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+
+interface Attachment {
+  fileId: number;
+  postId: number;
+  originalName: string;
+  storedName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
+}
 
 interface Post {
   postId: number;
@@ -39,6 +51,7 @@ const Board = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [commentsCount, setCommentsCount] = useState<{[key: number]: number}>({});
+  const [attachmentsCount, setAttachmentsCount] = useState<{[key: number]: number}>({});
   const { user } = useAuth();
 
   // 댓글 수 가져오기
@@ -54,6 +67,19 @@ const Board = () => {
     }
   };
 
+  // 첨부파일 수 가져오기
+  const fetchAttachmentsCount = async (postId: number) => {
+    try {
+      const attachments = await attachmentAPI.getFilesByPostId(postId);
+      setAttachmentsCount(prev => ({
+        ...prev,
+        [postId]: attachments.length
+      }));
+    } catch (error) {
+      console.error(`게시글 ${postId} 첨부파일 수 조회 실패:`, error);
+    }
+  };
+
   // 게시글 목록 가져오기
   const fetchPosts = async (page: number = 0, keyword?: string) => {
     try {
@@ -64,9 +90,10 @@ const Board = () => {
       setTotalElements(response.totalElements);
       setCurrentPage(response.number);
       
-      // 각 게시글의 댓글 수 조회
+      // 각 게시글의 댓글 수와 첨부파일 수 조회
       response.content.forEach(post => {
         fetchCommentsCount(post.postId);
+        fetchAttachmentsCount(post.postId);
       });
     } catch (error) {
       console.error('게시글 목록 조회 실패:', error);
@@ -194,12 +221,29 @@ const Board = () => {
                             <MessageSquare className="h-3 w-3" />
                             <span>{commentsCount[post.postId] || 0}</span>
                           </div>
+                          {(attachmentsCount[post.postId] || 0) > 0 && (
+                            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                              <Paperclip className="h-3 w-3" />
+                              <span>{attachmentsCount[post.postId]}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       <h3 className="text-lg font-semibold mb-2 hover:text-primary transition-colors">
                         {post.title || '제목 없음'}
                       </h3>
+                      
+                      {/* 첨부파일 표시 */}
+                      {(attachmentsCount[post.postId] || 0) > 0 && (
+                        <div className="mb-3">
+                          <Badge variant="secondary" className="text-xs">
+                            <Paperclip className="h-3 w-3 mr-1" />
+                            첨부파일 {attachmentsCount[post.postId]}개
+                          </Badge>
+                        </div>
+                      )}
+                      
                       <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                         {post.content || '내용 없음'}
                       </p>

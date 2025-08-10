@@ -8,7 +8,8 @@ import { Separator } from '@/components/ui/separator';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Upload, FileText, Loader2 } from 'lucide-react';
-import { postAPI } from '@/services/api';
+import { postAPI, attachmentAPI } from '@/services/api';
+import FileAttachment from '@/components/FileAttachment';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +22,23 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
+interface Attachment {
+  fileId: number;
+  postId: number;
+  originalName: string;
+  storedName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
+}
+
 const BoardNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [postId, setPostId] = useState<number | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -34,16 +46,51 @@ const BoardNew = () => {
   const [isPublished, setIsPublished] = useState(false);
   const [isNavigatingAway, setIsNavigatingAway] = useState(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setAttachments([...attachments, ...Array.from(e.target.files)]);
-      setHasUnsavedChanges(true);
-    }
+  // 첨부파일 변경 처리
+  const handleAttachmentsChange = (newAttachments: Attachment[]) => {
+    setAttachments(newAttachments);
+    setHasUnsavedChanges(true);
   };
 
-  const handleRemoveFile = (indexToRemove: number) => {
-    setAttachments(attachments.filter((_, index) => index !== indexToRemove));
-    setHasUnsavedChanges(true);
+  // 첨부파일 업로드 처리
+  const uploadAttachments = async (): Promise<void> => {
+    if (attachments.length === 0) return;
+
+    const uploadPromises = attachments
+      .filter(att => att.fileUrl.startsWith('blob:')) // 임시 파일만 업로드
+      .map(async (attachment) => {
+        try {
+          // blob URL에서 File 객체 추출
+          const response = await fetch(attachment.fileUrl);
+          const file = await response.blob();
+          const fileName = attachment.originalName;
+          
+          // File 객체 생성
+          const fileObj = new File([file], fileName, { type: attachment.fileType });
+          
+          // 실제 업로드
+          const uploadedAttachment = await attachmentAPI.uploadFile(fileObj, postId!);
+          
+          // blob URL 정리
+          URL.revokeObjectURL(attachment.fileUrl);
+          
+          return uploadedAttachment;
+        } catch (error) {
+          console.error('파일 업로드 실패:', error);
+          throw new Error(`${attachment.originalName} 업로드에 실패했습니다.`);
+        }
+      });
+
+    try {
+      await Promise.all(uploadPromises);
+      toast({
+        title: "파일 업로드 완료",
+        description: "모든 첨부파일이 성공적으로 업로드되었습니다.",
+      });
+    } catch (error) {
+      console.error('첨부파일 업로드 실패:', error);
+      throw error;
+    }
   };
 
   // 페이지 로드 시 게시글 초기화
@@ -76,10 +123,10 @@ const BoardNew = () => {
 
   // 내용 변경 감지
   useEffect(() => {
-    if (title.trim() || content.trim()) {
+    if (title.trim() || content.trim() || attachments.length > 0) {
       setHasUnsavedChanges(true);
     }
-  }, [title, content]);
+  }, [title, content, attachments]);
 
   // 브라우저 뒤로가기/앞으로가기 감지
   useEffect(() => {
@@ -253,6 +300,11 @@ const BoardNew = () => {
     setIsSubmitting(true);
 
     try {
+      // 첨부파일 업로드 (있는 경우)
+      if (attachments.length > 0) {
+        await uploadAttachments();
+      }
+
       // 게시글 저장 (백엔드에서 PUBLISHED 상태로 변경)
       await postAPI.savePost(postId, {
         title: title.trim(),
@@ -289,7 +341,7 @@ const BoardNew = () => {
       console.error('게시글 작성 실패:', error);
       toast({
         title: "오류",
-        description: "문서 작성에 실패했습니다. 다시 시도해주세요.",
+        description: error instanceof Error ? error.message : "문서 작성에 실패했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     } finally {
@@ -388,63 +440,30 @@ const BoardNew = () => {
             </CardContent>
           </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Upload className="h-5 w-5 mr-2" />
-              첨부파일 (선택사항)
-            </CardTitle>
-            <CardDescription>
-              문서와 관련된 파일을 첨부하세요. (최대 10MB)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Input
-                type="file"
-                multiple
-                onChange={handleFileUpload}
-                accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                disabled={isSubmitting}
-              />
-            </div>
-            
-            {attachments.length > 0 && (
-              <div className="space-y-2">
-                <Separator />
-                <p className="text-sm font-medium">첨부된 파일:</p>
-                {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">{file.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => !isSubmitting && handleRemoveFile(index)}
-                      disabled={isSubmitting}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {/* 파일 첨부 컴포넌트 */}
+          {postId && (
+            <FileAttachment
+              postId={postId}
+              attachments={attachments}
+              onAttachmentsChange={handleAttachmentsChange}
+              isEditing={true}
+              disabled={isSubmitting}
+            />
+          )}
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                저장 중...
-              </>
-            ) : (
-              '문서 저장'
-            )}
-          </Button>
-        </div>
-      </form>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  저장 중...
+                </>
+              ) : (
+                '문서 저장'
+              )}
+            </Button>
+          </div>
+        </form>
       )}
     </div>
   );
