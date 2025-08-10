@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Eye, MessageSquare, Send, Edit, Loader2, Edit2, Trash2, Check, X } from 'lucide-react';
-import { postAPI, commentAPI } from '@/services/api';
+import { ArrowLeft, Eye, MessageSquare, Send, Edit, Loader2, Edit2, Trash2, Check, X, Download, FileText, Image, File } from 'lucide-react';
+import { postAPI, commentAPI, attachmentAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CommentData {
@@ -17,6 +18,17 @@ interface CommentData {
   createdAt: string;
   updatedAt: string;
   postId: number;
+}
+
+interface Attachment {
+  fileId: number;
+  postId: number;
+  originalName: string;
+  storedName: string;
+  fileUrl: string;
+  fileSize: number;
+  fileType: string;
+  createdAt: string;
 }
 
 interface Post {
@@ -43,6 +55,7 @@ const BoardDetail = () => {
   const [editContent, setEditContent] = useState('');
   const [comments, setComments] = useState<CommentData[]>([]);
   const [post, setPost] = useState<Post | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthor, setIsAuthor] = useState(false);
 
@@ -55,6 +68,15 @@ const BoardDetail = () => {
       const postData = await postAPI.getPost(parseInt(id));
       setPost(postData);
       setIsAuthor(user?.userId === postData.userId);
+      
+      // 첨부파일 정보 가져오기
+      try {
+        const attachmentsData = await attachmentAPI.getFilesByPostId(parseInt(id));
+        setAttachments(attachmentsData);
+      } catch (error) {
+        console.error('첨부파일 조회 실패:', error);
+        // 첨부파일 조회 실패는 게시글 표시에 영향을 주지 않음
+      }
     } catch (error) {
       console.error('게시글 조회 실패:', error);
       toast({
@@ -65,6 +87,63 @@ const BoardDetail = () => {
       navigate('/board');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 파일 크기 포맷팅
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 파일 타입에 따른 아이콘
+  const getFileIcon = (fileType: string, originalName: string) => {
+    if (fileType.startsWith('image/')) {
+      return <Image className="h-4 w-4" />;
+    } else if (fileType.includes('pdf')) {
+      return <FileText className="h-4 w-4" />;
+    } else if (fileType.includes('word') || fileType.includes('document')) {
+      return <FileText className="h-4 w-4" />;
+    } else if (fileType.includes('excel') || fileType.includes('spreadsheet')) {
+      return <FileText className="h-4 w-4" />;
+    } else if (fileType.includes('powerpoint') || fileType.includes('presentation')) {
+      return <FileText className="h-4 w-4" />;
+    } else if (fileType.includes('text/')) {
+      return <FileText className="h-4 w-4" />;
+    } else {
+      return <File className="h-4 w-4" />;
+    }
+  };
+
+  // 파일 다운로드
+  const handleFileDownload = async (attachment: Attachment) => {
+    try {
+      const blob = await attachmentAPI.downloadFile(attachment.storedName);
+      
+      // 다운로드 링크 생성
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = attachment.originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "다운로드 시작",
+        description: `${attachment.originalName} 다운로드가 시작되었습니다.`,
+      });
+    } catch (error) {
+      console.error('파일 다운로드 실패:', error);
+      toast({
+        title: "다운로드 실패",
+        description: "파일 다운로드에 실패했습니다.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -333,6 +412,58 @@ const BoardDetail = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* 첨부파일 섹션 */}
+      {attachments.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <FileText className="h-5 w-5 mr-2" />
+              첨부파일 ({attachments.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {attachments.map((attachment) => (
+                <div 
+                  key={attachment.fileId} 
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg border"
+                >
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0">
+                      {getFileIcon(attachment.fileType, attachment.originalName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" title={attachment.originalName}>
+                        {attachment.originalName}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {formatFileSize(attachment.fileSize)}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {attachment.fileType || '알 수 없음'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleFileDownload(attachment)}
+                    title="다운로드"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    다운로드
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 댓글 섹션 */}
       <Card>
