@@ -29,8 +29,9 @@ interface FileAttachmentProps {
 // 백엔드 검증 규칙과 동일하게 설정
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_FILE_TYPES = [
-  'pdf', 'doc', 'docx', 'txt', 
-  'jpg', 'jpeg', 'png', 'gif'
+  'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp',
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'txt', 'hwp'
 ];
 
 const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = false, disabled = false }: FileAttachmentProps) => {
@@ -106,11 +107,18 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
       case 'pdf': return 'application/pdf';
       case 'doc': return 'application/msword';
       case 'docx': return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      case 'xls': return 'application/vnd.ms-excel';
+      case 'xlsx': return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case 'ppt': return 'application/vnd.ms-powerpoint';
+      case 'pptx': return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
       case 'txt': return 'text/plain';
+      case 'hwp': return 'application/x-hwp';
       case 'jpg':
       case 'jpeg': return 'image/jpeg';
       case 'png': return 'image/png';
       case 'gif': return 'image/gif';
+      case 'bmp': return 'image/bmp';
+      case 'webp': return 'image/webp';
       default: return 'application/octet-stream';
     }
   };
@@ -137,9 +145,9 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
     
     if (['pdf'].includes(extension || '')) {
       return <FileText className="h-8 w-8 text-red-500" />;
-    } else if (['doc', 'docx'].includes(extension || '')) {
+    } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'hwp'].includes(extension || '')) {
       return <FileText className="h-8 w-8 text-blue-500" />;
-    } else if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) {
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) {
       return <Image className="h-8 w-8 text-green-500" />;
     } else {
       return <File className="h-8 w-8 text-gray-500" />;
