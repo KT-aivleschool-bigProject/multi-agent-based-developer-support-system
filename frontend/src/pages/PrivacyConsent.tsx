@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Shield } from 'lucide-react';
 
-const Privacy = () => {
+const PrivacyConsent = () => {
   const navigate = useNavigate();
 
   return (
@@ -86,7 +86,7 @@ const Privacy = () => {
               <div className="bg-muted p-4 rounded-lg">
                 <p className="text-muted-foreground">
                   <strong>개인정보 보호책임자</strong><br />
-                  연락처: privacy@devcollab.com<br />
+                  연락처: gorani@devcollab.com<br />
                   전화번호: 02-1234-5678
                 </p>
               </div>
@@ -104,4 +104,4 @@ const Privacy = () => {
   );
 };
 
-export default Privacy;
+export default PrivacyConsent;

@@ -21,7 +21,8 @@ import CodeManagement from "./pages/CodeManagement";
 import TaskManagement from "./pages/TaskManagement";
 import ProjectManagement from "./pages/ProjectManagement";
 import ProjectCreate from "./pages/ProjectCreate";
-import Privacy from "./pages/Privacy";
+import PrivacyConsent from "./pages/PrivacyConsent";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
@@ -115,7 +116,8 @@ const App = () => (
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/privacy-consent" element={<PrivacyConsent />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
