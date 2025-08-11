@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { userAPI } from '@/services/api';
 import { toast } from '@/hooks/use-toast';
 import { Github, User, Mail, Briefcase, Trash2 } from 'lucide-react';
 import {
@@ -38,12 +39,23 @@ const Profile = () => {
     }
   }, [user]);
 
-  const handleSave = () => {
-    toast({
-      title: "프로필 업데이트",
-      description: "회원 정보가 성공적으로 업데이트되었습니다.",
-    });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      await userAPI.updateProfile(formData);
+      toast({
+        title: "프로필 업데이트",
+        description: "회원 정보가 성공적으로 업데이트되었습니다.",
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('프로필 업데이트 실패:', error);
+      toast({
+        title: "프로필 수정 기능 준비 중",
+        description: "프로필 수정 기능이 곧 추가될 예정입니다. 현재는 조회만 가능합니다.",
+        variant: "destructive",
+      });
+      setIsEditing(false);
+    }
   };
 
   const handleGithubConnect = () => {
@@ -97,7 +109,7 @@ const Profile = () => {
                   <User className="h-4 w-4 mt-3 text-muted-foreground" />
                   <Input
                     id="name"
-                    value={user.name}
+                    value={isEditing ? formData.name : user.name}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
@@ -111,7 +123,7 @@ const Profile = () => {
                   <Input
                     id="email"
                     type="email"
-                    value={user.email}
+                    value={isEditing ? formData.email : user.email}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
@@ -124,7 +136,7 @@ const Profile = () => {
                   <Briefcase className="h-4 w-4 mt-3 text-muted-foreground" />
                   <Input
                     id="position"
-                    value={user.position}
+                    value={isEditing ? formData.position : user.position}
                     disabled={!isEditing}
                     onChange={(e) => setFormData({ ...formData, position: e.target.value })}
                     placeholder="예: 프론트엔드 개발자"
@@ -136,12 +148,27 @@ const Profile = () => {
                 {isEditing ? (
                   <>
                     <Button onClick={handleSave}>저장</Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                    <Button variant="outline" onClick={() => {
+                      setIsEditing(false);
+                      // 폼 데이터를 원래 값으로 되돌리기
+                      setFormData({
+                        name: user.name || '',
+                        email: user.email || '',
+                        position: user.position || '',
+                      });
+                    }}>
                       취소
                     </Button>
                   </>
                 ) : (
-                  <Button onClick={() => setIsEditing(true)}>수정</Button>
+                  <div className="space-y-2">
+                    <Button disabled onClick={() => setIsEditing(true)}>
+                      수정 (준비 중)
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      프로필 수정 기능이 곧 추가될 예정입니다.
+                    </p>
+                  </div>
                 )}
               </div>
             </CardContent>

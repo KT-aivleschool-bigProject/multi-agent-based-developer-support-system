@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API 기본 설정
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8088'; // Gateway 포트
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Gateway 포트
 
 // axios 인스턴스 생성
 const api = axios.create({
@@ -103,15 +103,134 @@ export const userAPI = {
     return response.data;
   },
 
-  // 사용자 정보 조회
+  // 마이프로필 조회 (토큰 기반)
   getProfile: async () => {
-    const response = await api.get('/users/profile');
+    const response = await api.get('/users/me');
     return response.data;
   },
 
-  // 사용자 정보 수정
+  // 사용자 정보 수정 (임시 비활성화)
   updateProfile: async (data: any) => {
-    const response = await api.put('/users/profile', data);
+    // TODO: 백엔드에서 프로필 수정 API 구현 필요
+    throw new Error('프로필 수정 기능이 아직 구현되지 않았습니다.');
+  },
+};
+
+// 게시판 관련 API
+export const postAPI = {
+  // 게시글 작성 시작 (init)
+  startPostWriting: async () => {
+    const response = await api.post('/posts/init');
+    return response.data;
+  },
+
+  // 게시글 저장
+  savePost: async (postId: number, data: { title: string; content: string }) => {
+    const response = await api.patch(`/posts/${postId}/savepost`, data);
+    return response.data;
+  },
+
+  // 게시글 작성 취소
+  cancelPostWriting: async (postId: number) => {
+    const response = await api.delete(`/posts/${postId}/cancel`);
+    return response.data;
+  },
+
+  // 게시글 수정 전 본인확인
+  checkBeforeEditing: async (postId: number) => {
+    const response = await api.get(`/posts/${postId}/checkBeforeEditing`);
+    return response.data;
+  },
+
+  // 게시글 삭제
+  deletePost: async (postId: number) => {
+    const response = await api.delete(`/posts/${postId}/deletepost`);
+    return response.data;
+  },
+
+  // 게시글 상세조회
+  getPost: async (postId: number) => {
+    const response = await api.get(`/posts/${postId}`);
+    return response.data;
+  },
+
+  // 게시글 목록 조회
+  getPostList: async (page: number = 0, size: number = 10, searchKeyword?: string) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      sort: 'postId,desc'
+    });
+    
+    if (searchKeyword) {
+      params.append('searchKeyword', searchKeyword);
+    }
+    
+    const response = await api.get(`/posts/list?${params.toString()}`);
+    return response.data;
+  },
+};
+
+// 댓글 관련 API
+export const commentAPI = {
+  // 댓글 작성
+  createComment: async (data: { content: string; postId: number }) => {
+    const response = await api.post('/comments', data);
+    return response.data;
+  },
+
+  // 댓글 수정
+  updateComment: async (commentId: number, data: { content: string }) => {
+    const response = await api.put(`/comments/${commentId}`, data);
+    return response.data;
+  },
+
+  // 댓글 삭제
+  deleteComment: async (commentId: number) => {
+    const response = await api.delete(`/comments/${commentId}`);
+    return response.data;
+  },
+
+  // 게시글별 댓글 목록 조회
+  getCommentsByPostId: async (postId: number) => {
+    const response = await api.get(`/comments/post/${postId}`);
+    return response.data;
+  },
+};
+
+// 첨부파일 관련 API
+export const attachmentAPI = {
+  // 파일 업로드
+  uploadFile: async (file: File, postId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('postId', postId.toString());
+    
+    const response = await api.post('/attachments/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // 게시글별 첨부파일 목록 조회
+  getFilesByPostId: async (postId: number) => {
+    const response = await api.get(`/attachments/post/${postId}`);
+    return response.data;
+  },
+
+  // 파일 다운로드
+  downloadFile: async (filename: string) => {
+    const response = await api.get(`/attachments/download/${filename}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  // 파일 삭제
+  deleteFile: async (fileId: number) => {
+    const response = await api.delete(`/attachments/${fileId}`);
     return response.data;
   },
 };

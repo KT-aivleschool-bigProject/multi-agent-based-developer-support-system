@@ -16,4 +16,15 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})); 
+  optimizeDeps: {
+    include: [
+      '@fullcalendar/core',
+      '@fullcalendar/core/index.js',
+      '@fullcalendar/core/internal.js',
+      '@fullcalendar/core/preact.js',
+      '@fullcalendar/react',
+      '@fullcalendar/daygrid',
+      '@fullcalendar/interaction'
+    ]
+  }
+}));
