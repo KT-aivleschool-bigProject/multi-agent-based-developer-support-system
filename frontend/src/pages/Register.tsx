@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Code2, Loader2 } from 'lucide-react';
+import { Code2, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -18,6 +18,9 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [position, setPosition] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -27,7 +30,7 @@ const Register = () => {
     if (!agreeToTerms) {
       toast({
         title: "약관 동의 필요",
-        description: "개인정보처리방침에 동의해주세요.",
+        description: "개인정보수집동의에 동의해주세요.",
         variant: "destructive",
       });
       return;
@@ -135,32 +138,74 @@ const Register = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">비밀번호 *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                minLength={8}
-                maxLength={100}
-              />
-              <p className="text-xs text-muted-foreground">
-                비밀번호는 8자 이상 100자 이하여야 합니다.
-              </p>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setShowPasswordRequirements(true)}
+                  onBlur={() => {
+                    if (password.length >= 8) {
+                      setShowPasswordRequirements(false);
+                    }
+                  }}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  required
+                  disabled={isLoading}
+                  minLength={8}
+                  maxLength={100}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              {showPasswordRequirements && password.length < 8 && (
+                <div className="text-sm text-muted-foreground mt-2">
+                  <p>비밀번호는 8자 이상이어야 합니다</p>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">비밀번호 확인 *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                minLength={8}
-                maxLength={100}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                  required
+                  disabled={isLoading}
+                  minLength={8}
+                  maxLength={100}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -172,9 +217,9 @@ const Register = () => {
               />
               <Label htmlFor="terms" className="text-sm">
                 <span className="text-muted-foreground">
-                  개인정보처리방침에 동의합니다{' '}
+                  개인정보수집동의에 동의합니다{' '}
                 </span>
-                <Link to="/privacy" className="text-primary hover:underline">
+                <Link to="/privacy-consent" className="text-primary hover:underline">
                   (전문보기)
                 </Link>
               </Label>
