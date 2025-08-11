@@ -14,6 +14,41 @@ const Login = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // 비밀번호 복잡성 검증 함수
+  const validatePassword = (password: string): { isValid: boolean; message: string } => {
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
+    
+    const typesCount = [hasLetter, hasNumber, hasSpecialChar].filter(Boolean).length;
+    const length = password.length;
+    
+    // 금지된 특수문자 체크
+    const forbiddenChars = /[()<>"';]/.test(password);
+    if (forbiddenChars) {
+      return { isValid: false, message: "금지된 특수문자 ( ) < > \" ' ; 를 사용할 수 없습니다." };
+    }
+    
+    // 2종류 조합: 10~16자리
+    if (typesCount === 2) {
+      if (length < 10 || length > 16) {
+        return { isValid: false, message: "2종류 조합 시 10~16자리로 구성해야 합니다." };
+      }
+    }
+    // 3종류 조합: 8~16자리
+    else if (typesCount === 3) {
+      if (length < 8 || length > 16) {
+        return { isValid: false, message: "3종류 조합 시 8~16자리로 구성해야 합니다." };
+      }
+    }
+    // 1종류만 사용
+    else {
+      return { isValid: false, message: "영어, 숫자, 특수문자 중 최소 2종류를 조합해야 합니다." };
+    }
+    
+    return { isValid: true, message: "" };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -26,10 +61,11 @@ const Login = () => {
       return;
     }
 
-    if (password.length < 8) {
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
       toast({
         title: "비밀번호 오류",
-        description: "비밀번호는 8자 이상이어야 합니다.",
+        description: passwordValidation.message,
         variant: "destructive",
       });
       return;
@@ -89,6 +125,7 @@ const Login = () => {
                 required
                 disabled={isLoading}
                 minLength={8}
+                maxLength={16}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
