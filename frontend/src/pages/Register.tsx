@@ -219,7 +219,7 @@ const Register = () => {
                 <span className="text-muted-foreground">
                   개인정보수집동의에 동의합니다{' '}
                 </span>
-                <Link to="/privacy" className="text-primary hover:underline">
+                <Link to="/privacy-consent" className="text-primary hover:underline">
                   (전문보기)
                 </Link>
               </Label>
