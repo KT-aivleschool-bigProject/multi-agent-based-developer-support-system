@@ -158,6 +158,8 @@ const Board = () => {
           onClick={async () => {
             try {
               const postId = await postAPI.startPostWriting();
+              // postId를 로컬 스토리지에 저장
+              localStorage.setItem('currentPostId', postId.toString());
               navigate(`/board/new?postId=${postId}`);
             } catch (error) {
               console.error('게시글 작성 준비 실패:', error);

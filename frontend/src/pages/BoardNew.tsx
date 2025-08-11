@@ -99,7 +99,18 @@ const BoardNew = () => {
     const initializePost = async () => {
       try {
         setIsInitializing(true);
-        const postIdFromUrl = searchParams.get('postId');
+        let postIdFromUrl = searchParams.get('postId');
+        
+        // URL에 postId가 없으면 로컬 스토리지에서 가져오기
+        if (!postIdFromUrl) {
+          const storedPostId = localStorage.getItem('currentPostId');
+          if (storedPostId) {
+            postIdFromUrl = storedPostId;
+            // URL에 postId가 없으면 로컬 스토리지의 postId로 URL 업데이트
+            window.history.replaceState(null, '', `/board/new?postId=${storedPostId}`);
+          }
+        }
+        
         if (postIdFromUrl) {
           setPostId(parseInt(postIdFromUrl));
           // 게시글 상태 확인
@@ -247,6 +258,8 @@ const BoardNew = () => {
        }
       
       await postAPI.cancelPostWriting(postId);
+      // 로컬 스토리지에서 postId 제거
+      localStorage.removeItem('currentPostId');
       toast({
         title: "작성 취소",
         description: "게시글 작성이 취소되었습니다.",
@@ -355,6 +368,8 @@ const BoardNew = () => {
         });
       }
       
+      // 로컬 스토리지에서 postId 제거
+      localStorage.removeItem('currentPostId');
       navigate('/board');
     } catch (error) {
       console.error('게시글 작성 실패:', error);
