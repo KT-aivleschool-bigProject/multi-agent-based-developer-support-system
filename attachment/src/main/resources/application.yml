@@ -137,9 +137,10 @@ spring:
         enabled: true      
 azure:
   storage:
-    account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
-    account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
-    container-name: ${AZURE_STORAGE_CONTAINER_NAME}
+    blob:
+      account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
+      account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
+      container-name: ${AZURE_STORAGE_CONTAINER_NAME}
 
 file:
   storage:
