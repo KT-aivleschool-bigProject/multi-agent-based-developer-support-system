@@ -96,6 +96,12 @@
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>1.7.0</version> 
 		</dependency>
+		<!-- MySQL 드라이버 추가 -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
