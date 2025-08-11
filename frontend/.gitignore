@@ -1,6 +1,6 @@
 # Environment variables
-.env
-.env.*
+# .env
+# .env.*
 
 # Logs
 logs
@@ -30,3 +30,4 @@ dist-ssr
 *.sln
 *.sw?
 .DS_Store
+
