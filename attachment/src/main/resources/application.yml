@@ -72,6 +72,19 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+aiagent:
+  base-url: http://localhost:8000        # FastAPI 주소(로컬)
+
+post:
+  base-url: http://localhost:8090        # Post 서비스 내부 호출 주소(로컬)
+
+attachment:
+  public-base-url: http://localhost:8091 # FastAPI가 파일을 다운로드할 Attachment 주소(로컬)
+
+security:
+  internal-token: ""                     # 내부 호출 보호 토큰(사용 시 값 세팅)
+
+
 ---
 server:
   port: 8080
@@ -149,6 +162,15 @@ file:
     path-prefix: uploads/       
     public-access: false       
     cdn-enabled: true          
+
+aiagent:
+  base-url: http://fastapi:8000
+
+post:
+  base-url: http://post:8080
+
+attachment:
+  public-base-url: http://attachment:8080
 
  
 

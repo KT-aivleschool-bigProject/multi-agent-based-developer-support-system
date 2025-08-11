@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
     List<Attachment> findByPostId(Long postId);
+    List<Attachment> findByStoredNameIn(Collection<String> storedNames);
 }
