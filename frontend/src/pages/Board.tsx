@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, MessageSquare, Eye, Paperclip, Loader2 } from 'lucide-react';
 import { postAPI, commentAPI, attachmentAPI } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +44,7 @@ interface PostListResponse {
 }
 
 const Board = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,11 +154,24 @@ const Board = () => {
             프로젝트 문서를 공유하고 협업해보세요. (총 {totalElements}개)
           </p>
         </div>
-        <Button asChild className="mt-4 lg:mt-0">
-          <Link to="/board/new">
-            <Plus className="mr-2 h-4 w-4" />
-            문서 작성
-          </Link>
+        <Button 
+          onClick={async () => {
+            try {
+              const postId = await postAPI.startPostWriting();
+              navigate(`/board/new?postId=${postId}`);
+            } catch (error) {
+              console.error('게시글 작성 준비 실패:', error);
+              toast({
+                title: "오류",
+                description: "게시글 작성 준비에 실패했습니다. 다시 시도해주세요.",
+                variant: "destructive",
+              });
+            }
+          }}
+          className="mt-4 lg:mt-0"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          문서 작성
         </Button>
       </div>
 
@@ -198,7 +212,7 @@ const Board = () => {
             <>
               {posts.map((post) => (
                 <Card key={post.postId} className="hover:shadow-lg transition-shadow cursor-pointer">
-                  <Link to={`/board/${post.postId}`}>
+                  <div onClick={() => navigate(`/board/${post.postId}`)}>
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
@@ -248,7 +262,7 @@ const Board = () => {
                         {post.content || '내용 없음'}
                       </p>
                     </CardContent>
-                  </Link>
+                  </div>
                 </Card>
               ))}
 
