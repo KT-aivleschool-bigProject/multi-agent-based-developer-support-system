@@ -40,24 +40,11 @@ const BoardNew = () => {
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [postId, setPostId] = useState<number | null>(() => {
-    // localStorage에서 저장된 postId 복원
-    const savedPostId = localStorage.getItem('currentPostId');
-    return savedPostId ? parseInt(savedPostId) : null;
-  });
+  const [postId, setPostId] = useState<number | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [isNavigatingAway, setIsNavigatingAway] = useState(false);
-
-  // postId가 변경될 때마다 localStorage에 저장
-  useEffect(() => {
-    if (postId) {
-      localStorage.setItem('currentPostId', postId.toString());
-    } else {
-      localStorage.removeItem('currentPostId');
-    }
-  }, [postId]);
 
   // 첨부파일 변경 처리
   const handleAttachmentsChange = (newAttachments: Attachment[]) => {
@@ -109,12 +96,6 @@ const BoardNew = () => {
   // 페이지 로드 시 게시글 초기화
   useEffect(() => {
     const initializePost = async () => {
-      // 이미 postId가 있다면 초기화하지 않음
-      if (postId) {
-        setIsInitializing(false);
-        return;
-      }
-
       try {
         setIsInitializing(true);
         const newPostId = await postAPI.startPostWriting();
@@ -138,7 +119,7 @@ const BoardNew = () => {
     };
 
     initializePost();
-  }, [postId, navigate, toast]);
+  }, [navigate, toast]);
 
   // 내용 변경 감지
   useEffect(() => {
@@ -251,8 +232,6 @@ const BoardNew = () => {
         title: "작성 취소",
         description: "게시글 작성이 취소되었습니다.",
       });
-      // localStorage에서도 postId 제거
-      localStorage.removeItem('currentPostId');
       navigate('/board');
     } catch (error: any) {
       console.error('게시글 취소 실패:', error);
@@ -339,8 +318,6 @@ const BoardNew = () => {
           setIsPublished(true);
           setHasUnsavedChanges(false);
           setIsNavigatingAway(true); // 저장 완료 후 네비게이션 플래그 설정
-          // localStorage에서 postId 제거
-          localStorage.removeItem('currentPostId');
           toast({
             title: "성공",
             description: "문서가 성공적으로 게시되었습니다.",
