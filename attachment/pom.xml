@@ -100,14 +100,26 @@
         <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-blob</artifactId>
-            <version>12.23.0</version>
+            <version>12.8.0</version>
         </dependency>
-		<!-- Azure Spring Boot Starter -->
-        <dependency>
+		<!-- Project Reactor 의존성 추가 -->
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-core</artifactId>
+			<version>3.3.12.RELEASE</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>io.projectreactor.netty</groupId>
+			<artifactId>reactor-netty</artifactId>
+			<version>0.9.17.RELEASE</version>
+		</dependency>	
+		<!-- ✅ Azure Storage Starter만 추가 (BOM에서 버전 관리) -->
+        <!-- <dependency>
             <groupId>com.azure.spring</groupId>
-            <artifactId>azure-spring-boot-starter-storage</artifactId>
-            <version>3.14.0</version>
-        </dependency>
+            <artifactId>spring-cloud-azure-starter-storage-blob</artifactId>
+        </dependency> -->
+
 		<!-- MySQL 드라이버 추가 -->
         <dependency>
             <groupId>mysql</groupId>
