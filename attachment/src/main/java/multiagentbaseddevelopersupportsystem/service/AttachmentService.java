@@ -166,7 +166,9 @@ public class AttachmentService {
     private void deleteFromAzure(String storedFilename) {
         try {
             BlobClient blobClient = blobContainerClient.getBlobClient(storedFilename);
-            blobClient.deleteIfExists();
+            if (blobClient.exists()) {
+                blobClient.delete();
+            }
         } catch (Exception e) {
             log.error("Azure 파일 삭제 실패: {}", e.getMessage(), e);
             throw new RuntimeException("파일 삭제에 실패했습니다: " + e.getMessage());
@@ -194,8 +196,11 @@ public class AttachmentService {
                 throw new RuntimeException("파일을 찾을 수 없습니다: " + filename);
             }
 
-            byte[] content = blobClient.downloadContent().toBytes();
-            return new ByteArrayResource(content);
+            try (java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream()) {
+                blobClient.download(outputStream);
+                byte[] content = outputStream.toByteArray();
+                return new ByteArrayResource(content);
+            }
             
         } catch (Exception e) {
             log.error("Azure 다운로드 실패: {}", e.getMessage(), e);

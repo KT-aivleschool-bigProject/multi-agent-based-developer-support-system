@@ -16,7 +16,7 @@ import multiagentbaseddevelopersupportsystem.AttachmentApplication;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "Attachment_table")
+@Table(name = "attachments")
 public class Attachment {
 
     @Id
