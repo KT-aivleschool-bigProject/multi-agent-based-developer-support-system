@@ -195,9 +195,9 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
 
       <CardContent className="space-y-4">
         {/* 파일 업로드 영역 */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">
+        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+          <Upload className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-300 mb-2">
             파일을 여기에 드래그하거나 클릭하여 선택하세요
           </p>
           
@@ -255,15 +255,15 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
               {attachments.map((attachment) => (
                 <div
                   key={attachment.fileId}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 >
                   <div className="flex items-center gap-3">
                     {getFileIcon(attachment.fileType, attachment.originalName)}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
+                      <p className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">
                         {attachment.originalName}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
                         <span>{formatFileSize(attachment.fileSize)}</span>
                         <span>•</span>
                         <Badge variant="secondary" className="text-xs">
@@ -279,7 +279,7 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveFile(attachment.fileId)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                     >
                       <X className="h-4 w-4" />
                     </Button>
