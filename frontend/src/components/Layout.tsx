@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import { AppSidebar } from './AppSidebar';
@@ -7,17 +8,31 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AIAssistant from './AIAssistant';
 
 interface LayoutProps {
-  children: React.ReactNode;
+ 
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  
+  // 사이드바를 숨길 페이지들
+  const hideSidebarPaths = [
+    '/board/new',
+    '/projects/create'
+  ];
+  
+  // 현재 경로가 사이드바를 숨겨야 하는지 확인
+  const shouldHideSidebar = hideSidebarPaths.some(path => 
+    currentPath === path || currentPath.startsWith('/board/edit/')
+  );
+
   return (
     <SidebarProvider>
       <div className="min-h-screen bg-background w-full flex">
-        <AppSidebar />
-        <div className="flex-1 flex flex-col">
+        {!shouldHideSidebar && <AppSidebar />}
+        <div className={`flex-1 flex flex-col ${shouldHideSidebar ? 'w-full' : ''}`}>
           <header className="h-12 flex items-center border-b bg-card">
-            <SidebarTrigger className="ml-2" />
+            {!shouldHideSidebar && <SidebarTrigger className="ml-2" />}
             <div className="flex-1">
               <Header />
             </div>
