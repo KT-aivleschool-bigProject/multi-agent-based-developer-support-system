@@ -431,6 +431,17 @@ const BoardNew = () => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 파일 첨부 컴포넌트 */}
+          {postId && (
+            <FileAttachment
+              postId={postId}
+              attachments={attachments}
+              onAttachmentsChange={handleAttachmentsChange}
+              isEditing={true}
+              disabled={isSubmitting}
+            />
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -473,17 +484,6 @@ const BoardNew = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* 파일 첨부 컴포넌트 */}
-          {postId && (
-            <FileAttachment
-              postId={postId}
-              attachments={attachments}
-              onAttachmentsChange={handleAttachmentsChange}
-              isEditing={true}
-              disabled={isSubmitting}
-            />
-          )}
 
           <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>

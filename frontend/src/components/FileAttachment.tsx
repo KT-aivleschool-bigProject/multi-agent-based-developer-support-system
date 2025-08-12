@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, Image, File, X } from 'lucide-react';
+import { Upload, FileText, Image, File, X, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Attachment {
@@ -165,14 +165,32 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          첨부파일
-        </CardTitle>
-        <CardDescription>
-          문서와 관련된 파일을 첨부하세요. (최대 10MB)
-        </CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            첨부파일
+          </CardTitle>
+          <CardDescription>
+            문서와 관련된 파일을 첨부하세요. (최대 10MB)
+          </CardDescription>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            toast({
+              title: "AI 생성",
+              description: "첨부파일 기반 분석을 요청했어요.",
+            })
+          }
+          aria-label="AI 생성"
+          disabled={disabled}
+        >
+          <Sparkles className="h-4 w-4 mr-1" />
+          AI 생성
+        </Button>
       </CardHeader>
 
       <CardContent className="space-y-4">
