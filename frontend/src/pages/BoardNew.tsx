@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, X, Upload, FileText, Loader2 } from 'lucide-react';
 import { postAPI, attachmentAPI } from '@/services/api';
@@ -35,6 +35,7 @@ interface Attachment {
 
 const BoardNew = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -98,28 +99,35 @@ const BoardNew = () => {
     const initializePost = async () => {
       try {
         setIsInitializing(true);
-        const newPostId = await postAPI.startPostWriting();
-        setPostId(newPostId);
+        let postIdFromUrl = searchParams.get('postId');
+        
+        // URL에 postId가 없으면 로컬 스토리지에서 가져오기
+        if (!postIdFromUrl) {
+          const storedPostId = localStorage.getItem('currentPostId');
+          if (storedPostId) {
+            postIdFromUrl = storedPostId;
+            // URL에 postId가 없으면 로컬 스토리지의 postId로 URL 업데이트
+            window.history.replaceState(null, '', `/board/new?postId=${storedPostId}`);
+          }
+        }
+        
+        if (postIdFromUrl) {
+          setPostId(parseInt(postIdFromUrl));
+        } else {
+          // postId가 없으면 Board로 리다이렉트
+          navigate('/board');
+          return;
+        }
         setIsPublished(false); // 초기화 시 PUBLISHED 상태가 아님
-        toast({
-          title: "게시글 작성 준비 완료",
-          description: "이제 게시글을 작성할 수 있습니다.",
-        });
+        setIsInitializing(false);
       } catch (error) {
         console.error('게시글 초기화 실패:', error);
-        toast({
-          title: "오류",
-          description: "게시글 작성 준비에 실패했습니다. 다시 시도해주세요.",
-          variant: "destructive",
-        });
-        navigate('/board');
-      } finally {
         setIsInitializing(false);
       }
     };
 
     initializePost();
-  }, [navigate, toast]);
+  }, [searchParams, navigate]);
 
   // 내용 변경 감지
   useEffect(() => {
@@ -131,9 +139,16 @@ const BoardNew = () => {
   // 브라우저 뒤로가기/앞으로가기 감지
   useEffect(() => {
     const handlePopState = async (event: PopStateEvent) => {
-      if (postId && !isPublished && !isNavigatingAway) {
-        event.preventDefault();
-        
+      // postId가 null이면 URL에서 직접 가져오기
+      let currentPostId = postId;
+      if (!currentPostId) {
+        const postIdFromUrl = searchParams.get('postId');
+        if (postIdFromUrl) {
+          currentPostId = parseInt(postIdFromUrl);
+        }
+      }
+      
+      if (currentPostId && !isPublished && !isNavigatingAway) {
         // 사용자에게 확인 요청
         const confirmed = window.confirm(
           "게시글 작성 중입니다. 페이지를 나가시면 작성 중인 내용이 취소됩니다. 정말로 나가시겠습니까?"
@@ -141,7 +156,18 @@ const BoardNew = () => {
         
         if (confirmed) {
           setIsNavigatingAway(true);
-          await handleCancelWriting();
+          // URL에서 가져온 postId로 취소 처리
+          try {
+            await postAPI.cancelPostWriting(currentPostId);
+            toast({
+              title: "작성 취소",
+              description: "게시글 작성이 취소되었습니다.",
+            });
+            navigate('/board');
+          } catch (error) {
+            console.error('게시글 취소 실패:', error);
+            navigate('/board');
+          }
         } else {
           // 뒤로가기를 막고 현재 페이지에 머무름
           window.history.pushState(null, '', window.location.pathname);
@@ -163,7 +189,6 @@ const BoardNew = () => {
       if (postId && !isPublished && !isNavigatingAway) {
         try {
           await postAPI.cancelPostWriting(postId);
-          console.log('페이지 이탈 시 게시글 자동 취소 완료');
         } catch (error) {
           console.error('페이지 이탈 시 게시글 취소 실패:', error);
         }
@@ -183,7 +208,7 @@ const BoardNew = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handlePageHide);
     };
-  }, [postId, isPublished, hasUnsavedChanges, isNavigatingAway]);
+  }, [postId, isPublished, isNavigatingAway, searchParams, hasUnsavedChanges, navigate, toast]); // postId 의존성 추가
 
   // 게시글 작성 취소
   const handleCancelWriting = async () => {
@@ -204,30 +229,10 @@ const BoardNew = () => {
     }
 
     try {
-      console.log('게시글 취소 시도:', { postId, isPublished });
-      
-      // 현재 게시글 상태 확인
-      try {
-        const postData = await postAPI.getPost(postId);
-        console.log('현재 게시글 상태:', postData);
-        
-        // 게시글이 이미 PUBLISHED 상태인지 확인
-        if (postData.status === 'PUBLISHED') {
-          setIsPublished(true);
-          toast({
-            title: "취소 불가",
-            description: "이미 게시된 게시글은 취소할 수 없습니다.",
-            variant: "destructive",
-          });
-          navigate('/board');
-          return;
-        }
-      } catch (statusError) {
-        console.log('게시글 상태 확인 실패:', statusError);
-        // 상태 확인에 실패해도 취소 시도는 계속
-      }
-      
+      // 게시글 작성 취소
       await postAPI.cancelPostWriting(postId);
+      // 로컬 스토리지에서 postId 제거
+      localStorage.removeItem('currentPostId');
       toast({
         title: "작성 취소",
         description: "게시글 작성이 취소되었습니다.",
@@ -306,36 +311,23 @@ const BoardNew = () => {
       }
 
       // 게시글 저장 (백엔드에서 PUBLISHED 상태로 변경)
-      await postAPI.savePost(postId, {
+      const saveResponse = await postAPI.savePost(postId, {
         title: title.trim(),
         content: content.trim()
       });
 
-      // 저장 후 게시글 상태 확인
-      try {
-        const postData = await postAPI.getPost(postId);
-        if (postData.status === 'PUBLISHED') {
-          setIsPublished(true);
-          setHasUnsavedChanges(false);
-          setIsNavigatingAway(true); // 저장 완료 후 네비게이션 플래그 설정
-          toast({
-            title: "성공",
-            description: "문서가 성공적으로 게시되었습니다.",
-          });
-        } else {
-          toast({
-            title: "성공",
-            description: "문서가 성공적으로 저장되었습니다.",
-          });
-        }
-      } catch (statusError) {
-        console.log('게시글 상태 확인 실패:', statusError);
-        toast({
-          title: "성공",
-          description: "문서가 성공적으로 저장되었습니다.",
-        });
-      }
+      // 저장 완료 후 처리 - 불필요한 getPost 호출 제거
+      setIsPublished(true);
+      setHasUnsavedChanges(false);
+      setIsNavigatingAway(true); // 저장 완료 후 네비게이션 플래그 설정
       
+      toast({
+        title: "성공",
+        description: "문서가 성공적으로 게시되었습니다.",
+      });
+      
+      // 로컬 스토리지에서 postId 제거
+      localStorage.removeItem('currentPostId');
       navigate('/board');
     } catch (error) {
       console.error('게시글 작성 실패:', error);
@@ -397,6 +389,17 @@ const BoardNew = () => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 파일 첨부 컴포넌트 */}
+          {postId && (
+            <FileAttachment
+              postId={postId}
+              attachments={attachments}
+              onAttachmentsChange={handleAttachmentsChange}
+              isEditing={true}
+              disabled={isSubmitting}
+            />
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -439,17 +442,6 @@ const BoardNew = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* 파일 첨부 컴포넌트 */}
-          {postId && (
-            <FileAttachment
-              postId={postId}
-              attachments={attachments}
-              onAttachmentsChange={handleAttachmentsChange}
-              isEditing={true}
-              disabled={isSubmitting}
-            />
-          )}
 
           <div className="flex justify-end">
             <Button type="submit" disabled={isSubmitting || !title.trim() || !content.trim()}>
