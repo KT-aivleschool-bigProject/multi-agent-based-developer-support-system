@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 import multiagentbaseddevelopersupportsystem.CommentApplication;
 
 @Entity
-@Table(name = "Comment_table")
+@Table(name = "comments")
 @Builder
 @Data
 @NoArgsConstructor
@@ -22,7 +22,7 @@ import multiagentbaseddevelopersupportsystem.CommentApplication;
 public class Comment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long commentId;
 
     @Column(name="content", nullable=false, length=500)
