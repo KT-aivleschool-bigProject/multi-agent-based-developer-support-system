@@ -39,7 +39,6 @@ public class PolicyHandler {
             "\n\n"
         );
 
-        // Sample Logic //
         Attachment.deleteAttachmentIncludedPost(event);
     }
 
@@ -57,10 +56,23 @@ public class PolicyHandler {
             "\n\n"
         );
 
-        // Sample Logic //
-        attachmentService.sendProjectAttachmentsToDocumentAgent(projectCreated);
+        attachmentService.sendProjectAttachmentsToDocumentAgent(event);
     }
 
+    @StreamListener(
+        value = KafkaProcessor.INPUT,
+        condition = "headers['type']=='PostCreatedByAttachmentAgent'"
+    )
+    public void wheneverPostCreatedByAttachmentAgent_SendPostCreatedNotification(
+        @Payload PostCreatedByAttachmentAgent postCreatedByAttachmentAgent
+    ) {
+        PostCreatedByAttachmentAgent event = postCreatedByAttachmentAgent;
+        System.out.println(
+            "\n\n##### listener SendPostCreatedNotification : " +
+            postCreatedByAttachmentAgent +
+            "\n\n"
+        );
 
+        attachmentService.updatePostIdInFile(event);
+    }
 }
-//>>> Clean Arch / Inbound Adaptor
