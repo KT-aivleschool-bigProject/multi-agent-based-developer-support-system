@@ -16,7 +16,6 @@ interface CommentData {
   content: string;
   userName: string;
   createdAt: string;
-  updatedAt: string;
   postId: number;
 }
 
@@ -38,7 +37,6 @@ interface Post {
   userId: number;
   userName?: string;
   createdAt: string;
-  updatedAt: string;
   viewCount: number;
   commentCount?: number;
 }
@@ -320,14 +318,6 @@ const BoardDetail = () => {
     return date.toLocaleDateString('ko-KR');
   };
 
-  // 게시글 날짜 표시 (수정일 우선, 없으면 생성일)
-  const getDisplayDate = (post: Post) => {
-    if (post.updatedAt && post.updatedAt !== post.createdAt) {
-      return `${formatDate(post.updatedAt)} (수정됨)`;
-    }
-    return formatDate(post.createdAt);
-  };
-
   useEffect(() => {
     fetchPost();
     fetchComments();
@@ -387,7 +377,7 @@ const BoardDetail = () => {
               <div>
                 <p className="font-medium">{post.userName || `사용자${post.userId}`}</p>
                 <div className="text-sm text-muted-foreground">
-                  <p>{getDisplayDate(post)}</p>
+                  <p>{formatDate(post.createdAt)}</p>
                 </div>
               </div>
             </div>
