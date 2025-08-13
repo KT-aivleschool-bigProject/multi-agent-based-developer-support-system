@@ -62,19 +62,20 @@ spring:
           uri: http://localhost:3000
           predicates:
             - Path=/**
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:
         corsConfigurations:
           '[/**]':
             allowedOrigins:
               - "http://localhost:3000"
               - "http://127.0.0.1:3000"
+              - "http://192.168.*.*:3000"
             allowedMethods:
               - "*"
             allowedHeaders:
               - "*"
             allowCredentials: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
 logging:
   level:
     multiagentbaseddevelopersupportsystem: DEBUG
