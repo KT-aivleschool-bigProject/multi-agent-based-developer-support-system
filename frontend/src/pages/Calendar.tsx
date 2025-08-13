@@ -5,7 +5,6 @@ import interactionPlugin from '@fullcalendar/interaction';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin, Plus } from 'lucide-react';
 
 // ✅ .env에서 값 읽기 (Vite: import.meta.env)
@@ -95,29 +94,21 @@ const Calendar = () => {
 
           // 리스트용 가공 필드
           const startDate = startISO ? new Date(startISO) : null;
-          const endDate = endISO ? new Date(endISO) : null;
 
-          return {
-            id: item.id ?? `google-${index}`,
-            title: item.summary || '제목 없음',
-            time: item.start?.dateTime
-              ? new Date(item.start.dateTime).toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : '종일',
-            date: item.start?.dateTime
-              ? new Date(item.start.dateTime).toISOString().split('T')[0]
-              : item.start?.date || '',
-            type: 'google',
-            attendees: item.attendees?.length || 0,
-            location: item.location || '장소 없음',
-            description: item.description || '',
-            startTime: startISO || '',
-            endTime: endISO || '',
-            startDate,
-            endDate,
-          };
+                      return {
+              id: item.id ?? `google-${index}`,
+              title: item.summary || '제목 없음',
+              time: item.start?.dateTime
+                ? new Date(item.start.dateTime).toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '종일',
+              location: item.location || '장소 없음',
+              startTime: startISO || '',
+              endTime: endISO || '',
+              startDate,
+            };
         }) ?? [];
 
       setGoogleEvents(events);
