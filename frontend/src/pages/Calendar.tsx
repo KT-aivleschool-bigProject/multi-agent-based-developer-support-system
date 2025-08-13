@@ -5,7 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin, Plus } from 'lucide-react';
+import { Clock, MapPin } from 'lucide-react';
 
 // ✅ .env에서 값 읽기 (Vite: import.meta.env)
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -215,12 +215,8 @@ const Calendar = () => {
                     }
                   }}
                 />
-              </div>
-              <Button className="w-full mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                새 일정 추가
-              </Button>
-            </CardContent>
+                             </div>
+             </CardContent>
           </Card>
         </div>
 
@@ -228,8 +224,8 @@ const Calendar = () => {
           {/* 오늘의 일정: my-calendar */}
           <Card>
             <CardHeader>
-              <CardTitle>오늘의 일정</CardTitle>
-              <CardDescription>{new Date().toLocaleDateString()}</CardDescription>
+              <CardTitle>오늘의 일정 추천</CardTitle>
+              <CardDescription>AI가 추천한 {new Date().toLocaleDateString()} 일정입니다.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -267,9 +263,9 @@ const Calendar = () => {
           {/* 이번 주 일정: my-calendar - 오늘 제외 X, 주간 전체 */}
           <Card>
             <CardHeader>
-              <CardTitle>이번 주 일정</CardTitle>
+              <CardTitle>이번 주 일정 추천</CardTitle>
               <CardDescription>
-                {weekStart.toLocaleDateString()} ~ {weekEnd.toLocaleDateString()}
+                AI가 추천한 {weekStart.toLocaleDateString()} ~ {weekEnd.toLocaleDateString()} 주 일정입니다.
               </CardDescription>
             </CardHeader>
             <CardContent>
