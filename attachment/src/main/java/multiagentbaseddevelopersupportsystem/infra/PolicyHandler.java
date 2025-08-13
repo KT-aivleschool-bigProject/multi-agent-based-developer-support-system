@@ -56,8 +56,23 @@ public class PolicyHandler {
             "\n\n"
         );
 
-        attachmentService.sendProjectAttachmentsToDocumentAgent(projectCreated);
+        attachmentService.sendProjectAttachmentsToDocumentAgent(event);
     }
 
+    @StreamListener(
+        value = KafkaProcessor.INPUT,
+        condition = "headers['type']=='PostCreatedByAttachmentAgent'"
+    )
+    public void wheneverPostCreatedByAttachmentAgent_SendPostCreatedNotification(
+        @Payload PostCreatedByAttachmentAgent postCreatedByAttachmentAgent
+    ) {
+        PostCreatedByAttachmentAgent event = postCreatedByAttachmentAgent;
+        System.out.println(
+            "\n\n##### listener SendPostCreatedNotification : " +
+            postCreatedByAttachmentAgent +
+            "\n\n"
+        );
 
+        attachmentService.updatePostIdInFile(event);
+    }
 }

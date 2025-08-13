@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.AttachmentRepository;
+import multiagentbaseddevelopersupportsystem.domain.PostCreatedByAttachmentAgent;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentAutoCreated;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
 import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
@@ -275,7 +277,7 @@ public class AttachmentService {
             return;
         }
 
-        List<ProjectAttachmentRequest> result = new java.util.ArrayList<>();
+        List<ProjectAttachmentRequest> result = new ArrayList<>();
         if ("azure".equals(storageType) && blobContainerClient != null) {
             for (Attachment file : files) {
                 ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
@@ -310,10 +312,12 @@ public class AttachmentService {
                 requestEntity,
                 new ParameterizedTypeReference<List<ProjectAttachmentAutoCreated>>() {}
             );
-            log.info("FastAPI 응답: {}", response.getBody());
-
-            for(ProjectAttachmentAutoCreated post : response.getBody()) {
-                post.publishAfterCommit();
+            List<ProjectAttachmentAutoCreated> body = response.getBody();
+            if (body != null) {
+                log.info("FastAPI 응답: {}", body);
+                body.forEach(ProjectAttachmentAutoCreated::publishAfterCommit);
+            } else {
+                log.warn("FastAPI 응답이 비어있습니다.");
             }
         } catch (Exception e) {
             log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
@@ -322,5 +326,13 @@ public class AttachmentService {
         return;
     }
 
-    
+    public void updatePostIdInFile(PostCreatedByAttachmentAgent postCreatedByAttachmentAgent) {
+        Long postId = postCreatedByAttachmentAgent.getPostId();
+        Long fileId = postCreatedByAttachmentAgent.getFileId();
+
+        Attachment attachment = attachmentRepository.findById(fileId)
+            .orElseThrow(() -> new RuntimeException("No Entity Found"));
+        attachment.setPostId(postId);
+        attachmentRepository.save(attachment);
+    }
 }

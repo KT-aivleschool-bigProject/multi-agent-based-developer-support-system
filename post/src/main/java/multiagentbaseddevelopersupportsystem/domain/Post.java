@@ -52,7 +52,7 @@ public class Post  {
     @Column(name="updated_at")
     private Date updatedAt;    
     
-    @Column(name="user_id", nullable=false)
+    @Column(name="user_id")
     private Long userId;
 
     @Enumerated(EnumType.STRING)
@@ -67,6 +67,17 @@ public class Post  {
     }
 
     public PostResponseDto toDto() {
+        if (this.userId == null) {
+            return PostResponseDto.builder()
+                .postId(this.postId)
+                .title(this.title)
+                .content(this.content)
+                .viewCount(this.viewCount)
+                .createdAt(this.createdAt)
+                .updatedAt(this.updatedAt)
+                .userName("문서화 agent")
+                .build();
+        }
         UserDto user = userClient().getUserById(this.userId);
         return PostResponseDto.builder()
             .postId(this.postId)
