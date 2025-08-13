@@ -39,7 +39,6 @@ public class PolicyHandler {
             "\n\n"
         );
 
-        // Sample Logic //
         Attachment.deleteAttachmentIncludedPost(event);
     }
 
@@ -57,10 +56,8 @@ public class PolicyHandler {
             "\n\n"
         );
 
-        // Sample Logic //
         attachmentService.sendProjectAttachmentsToDocumentAgent(projectCreated);
     }
 
 
 }
-//>>> Clean Arch / Inbound Adaptor

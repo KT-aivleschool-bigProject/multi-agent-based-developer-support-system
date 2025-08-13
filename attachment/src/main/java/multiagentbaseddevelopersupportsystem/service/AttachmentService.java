@@ -6,12 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -20,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
@@ -31,8 +33,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.AttachmentRepository;
+import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentAutoCreated;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
 import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
+
 
 @Service
 @RequiredArgsConstructor
@@ -263,9 +267,14 @@ public class AttachmentService {
                 .orElse(storedFilename);
     }
 
-    public List<ProjectAttachmentRequest> sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
+    public void sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
         Long projectId = projectCreated.getProjectId();
         List<Attachment> files = attachmentRepository.findByProjectId(projectId);
+        if (files.isEmpty()) {
+            log.warn("프로젝트에 첨부파일이 없습니다: {}", projectId);
+            return;
+        }
+
         List<ProjectAttachmentRequest> result = new java.util.ArrayList<>();
         if ("azure".equals(storageType) && blobContainerClient != null) {
             for (Attachment file : files) {
@@ -295,13 +304,22 @@ public class AttachmentService {
         HttpEntity<List<ProjectAttachmentRequest>> requestEntity = new HttpEntity<>(result, headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl, requestEntity, String.class);
+            ResponseEntity<List<ProjectAttachmentAutoCreated>> response = restTemplate.exchange(
+                fastApiUrl,
+                org.springframework.http.HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<List<ProjectAttachmentAutoCreated>>() {}
+            );
             log.info("FastAPI 응답: {}", response.getBody());
+
+            for(ProjectAttachmentAutoCreated post : response.getBody()) {
+                post.publishAfterCommit();
+            }
         } catch (Exception e) {
             log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
         }
 
-        return result;
+        return;
     }
 
     
