@@ -1,13 +1,32 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import googleCalendarPlugin from '@fullcalendar/google-calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Clock, Users, MapPin } from 'lucide-react';
 
+// ✅ Google Calendar API 키 (실제 키로 교체하세요)
+const GOOGLE_API_KEY = 'AIzaSyDJmnq8e5n7I-bQrzPm9MyGYc5rgkJO4Tc';
+
+// ✅ 연동할 Google 캘린더들 (공개 캘린더여야 API Key로 조회 가능)
+const CALENDARS = [
+  {
+    id: 'calendar',
+    googleCalendarId: 'ko.south_korea#holiday@group.v.calendar.google.com',
+    color: '#b91c1c', // 공휴일용 부드러운 붉은색 (다크모드에서 눈이 편안함)
+  },
+  {
+    id: 'my-calendar',
+    googleCalendarId: 'yoon58043@gmail.com',
+    color: '#4786ff',
+  }
+];
+
 const Calendar = () => {
+  // (기존) 로컬 이벤트
   const events = [
     {
       id: 1,
@@ -38,18 +57,21 @@ const Calendar = () => {
     },
   ];
 
-  // FullCalendar 이벤트 형식으로 변환
+  // FullCalendar 이벤트 형식으로 변환 (로컬)
   const fullCalendarEvents = events.map(event => ({
     id: event.id.toString(),
     title: event.title,
     date: event.date,
-    backgroundColor: event.type === 'meeting' ? '#3b82f6' : 
-                    event.type === 'review' ? '#10b981' : '#8b5cf6',
-    borderColor: event.type === 'meeting' ? '#3b82f6' : 
-                event.type === 'review' ? '#10b981' : '#8b5cf6',
+    backgroundColor:
+      event.type === 'meeting' ? '#3b82f6' :
+      event.type === 'review'  ? '#10b981' : '#8b5cf6',
+    borderColor:
+      event.type === 'meeting' ? '#3b82f6' :
+      event.type === 'review'  ? '#10b981' : '#8b5cf6',
   }));
 
-  const upcomingEvents = events.filter(event => 
+  // 사이드패널용 (기존 그대로 유지)
+  const upcomingEvents = events.filter(event =>
     new Date(event.date) >= new Date()
   );
 
@@ -66,6 +88,25 @@ const Calendar = () => {
     }
   };
 
+  // ✅ FullCalendar가 사용할 “여러 소스” 정의: ① 로컬 ② 구글 캘린더들
+  const eventSources = useMemo(
+    () => [
+      // 로컬 이벤트 소스
+      {
+        id: 'local-events',
+        events: fullCalendarEvents,
+      },
+      // 구글 캘린더 소스들
+      ...CALENDARS.map(c => ({
+        id: c.id,
+        googleCalendarId: c.googleCalendarId,
+        color: c.color,
+        textColor: '#fff',
+      })),
+    ],
+    [fullCalendarEvents]
+  );
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -81,9 +122,14 @@ const Calendar = () => {
             <CardContent>
               <div className="rounded-md border fullcalendar-wrapper">
                 <FullCalendar
-                  plugins={[dayGridPlugin, interactionPlugin]}
+                  // ✅ Google Calendar 플러그인 활성화
+                  plugins={[dayGridPlugin, interactionPlugin, googleCalendarPlugin]}
                   initialView="dayGridMonth"
-                  events={fullCalendarEvents}
+                  // ❌ 기존: events={fullCalendarEvents}
+                  // ✅ 변경: eventSources로 로컬+구글 동시 주입
+                  eventSources={eventSources}
+                  // ✅ Google API Key 전달
+                  googleCalendarApiKey={GOOGLE_API_KEY}
                   height="auto"
                   headerToolbar={{
                     left: 'prev,next today',
@@ -100,7 +146,13 @@ const Calendar = () => {
                     console.log('Selected date:', info.dateStr);
                   }}
                   eventClick={(info) => {
-                    console.log('Event clicked:', info.event.title);
+                    // 구글 이벤트는 url이 들어있어 원본으로 이동 가능
+                    info.jsEvent.preventDefault();
+                    if (info.event.url) {
+                      window.open(info.event.url, '_blank', 'noopener,noreferrer');
+                    } else {
+                      console.log('Event clicked:', info.event.title);
+                    }
                   }}
                 />
               </div>
@@ -128,7 +180,7 @@ const Calendar = () => {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{event.title}</h3>
                         <Badge className={getEventTypeColor(event.type)}>
-                          {event.type === 'meeting' ? '회의' : 
+                          {event.type === 'meeting' ? '회의' :
                            event.type === 'review' ? '리뷰' : '발표'}
                         </Badge>
                       </div>
