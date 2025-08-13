@@ -100,16 +100,6 @@ const ProjectManagement = () => {
         </Card>
       </div>
 
-      {/* 챗봇 버튼 */}
-      <div className="fixed bottom-6 right-6">
-        <Button
-          size="lg"
-          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-        >
-          <Sparkles className="h-6 w-6" />
-        </Button>
-      </div>
-
       {/* 프로젝트 상세 관리 팝업 */}
       <Dialog open={isProjectDetailOpen} onOpenChange={setIsProjectDetailOpen}>
         <DialogContent className="max-w-2xl">

@@ -388,11 +388,6 @@ const ProjectCreate = () => {
           <Sparkles className="h-6 w-6" />
         </Button>
       </div>
-
-      {/* 모든 정보는 언제든지 수정할 수 있습니다 */}
-      <div className="text-center text-xs text-muted-foreground py-4">
-        모든 정보는 언제든지 수정할 수 있습니다
-      </div>
     </div>
   );
 };
