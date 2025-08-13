@@ -15,6 +15,7 @@ import multiagentbaseddevelopersupportsystem.domain.PostDeleted;
 import multiagentbaseddevelopersupportsystem.domain.PostRepository;
 import multiagentbaseddevelopersupportsystem.domain.PostResponseDto;
 import multiagentbaseddevelopersupportsystem.domain.PostStatus;
+import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentAutoCreated;
 import multiagentbaseddevelopersupportsystem.domain.SavePostCommand;
 import multiagentbaseddevelopersupportsystem.domain.UserDto;
 import multiagentbaseddevelopersupportsystem.external.UserClient;
@@ -101,5 +102,20 @@ public class PostService {
             return postRepository.findAll(pageable).map(Post::toDto);
         }
         return postRepository.findByTitleContaining(searchKeyword, pageable).map(Post::toDto);
+    }
+
+    public void createPostIncludingProjectAttachment(ProjectAttachmentAutoCreated event) {
+        Post post = Post.builder()
+            .title(event.getTitle())
+            .content(event.getContent())
+            .viewCount(0)
+            .userId(null)
+            .status(PostStatus.PUBLISHED)
+            .build();
+        Long postId = postRepository.save(post).getPostId();
+        PostCreatedByAttachmentAgent postCreatedByAttachmentAgent = new PostCreatedByAttachmentAgent();
+        postCreatedByAttachmentAgent.setPostId(postId);
+        postCreatedByAttachmentAgent.setFileId(event.getFileId());
+        postCreatedByAttachmentAgent.publishAfterCommit();
     }
 }
