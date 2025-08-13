@@ -29,7 +29,6 @@ interface Post {
   userId: number;
   userName?: string;
   createdAt: string;
-  updatedAt?: string;
   viewCount: number;
   commentCount?: number;
 }
@@ -146,14 +145,6 @@ const Board = () => {
     return date.toLocaleDateString('ko-KR');
   };
 
-  // 게시글 날짜 표시 (수정일 우선, 없으면 생성일)
-  const getDisplayDate = (post: Post) => {
-    if (post.updatedAt && post.updatedAt !== post.createdAt) {
-      return `${formatDate(post.updatedAt)} (수정됨)`;
-    }
-    return formatDate(post.createdAt);
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
@@ -234,7 +225,7 @@ const Board = () => {
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">{post.userName || `사용자${post.userId}`}</p>
-                            <p className="text-xs text-muted-foreground">{getDisplayDate(post)}</p>
+                            <p className="text-xs text-muted-foreground">{formatDate(post.createdAt)}</p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
