@@ -62,7 +62,8 @@ spring:
           uri: http://localhost:3000
           predicates:
             - Path=/**
-#>>> API Gateway / Routes
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
       globalcors:
         corsConfigurations:
           '[/**]':
