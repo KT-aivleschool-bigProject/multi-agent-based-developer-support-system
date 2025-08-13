@@ -21,12 +21,21 @@ public class AttachmentController {
 
     private final AttachmentService attachmentService;
 
-    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "postId")
     public ResponseEntity<Attachment> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("postId") Long postId) throws IOException {
-        
-        Attachment attachment = attachmentService.uploadFile(file, postId);
+            @RequestParam(value = "postId") Long postId) throws IOException {
+
+        Attachment attachment = attachmentService.uploadFile(file, postId, null);
+        return ResponseEntity.ok(attachment);
+    }
+
+    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "projectId")
+    public ResponseEntity<Attachment> uploadFileCreatingProject(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "projectId") Long projectId) throws IOException {
+
+        Attachment attachment = attachmentService.uploadFile(file, null, projectId);
         return ResponseEntity.ok(attachment);
     }
 

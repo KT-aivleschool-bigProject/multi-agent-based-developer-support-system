@@ -3,22 +3,24 @@ package multiagentbaseddevelopersupportsystem.infra;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.naming.NameParser;
-import javax.naming.NameParser;
 import javax.transaction.Transactional;
 import multiagentbaseddevelopersupportsystem.config.kafka.KafkaProcessor;
 import multiagentbaseddevelopersupportsystem.domain.*;
+import multiagentbaseddevelopersupportsystem.service.AttachmentService;
+
+import org.apache.kafka.common.network.Send;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-//<<< Clean Arch / Inbound Adaptor
+
 @Service
 @Transactional
 public class PolicyHandler {
 
     @Autowired
-    AttachmentRepository attachmentRepository;
+    AttachmentService attachmentService;
 
     @StreamListener(KafkaProcessor.INPUT)
     public void whatever(@Payload String eventString) {}
@@ -40,5 +42,25 @@ public class PolicyHandler {
         // Sample Logic //
         Attachment.deleteAttachmentIncludedPost(event);
     }
+
+    @StreamListener(
+        value = KafkaProcessor.INPUT,
+        condition = "headers['type']=='ProjectCreated'"
+    )
+    public void wheneverProjectCreated_SendProjectAttachmentsToDocumentAgent(
+        @Payload ProjectCreated projectCreated
+    ) {
+        ProjectCreated event = projectCreated;
+        System.out.println(
+            "\n\n##### listener SendProjectAttachmentsToDocumentAgent : " +
+            projectCreated +
+            "\n\n"
+        );
+
+        // Sample Logic //
+        attachmentService.sendProjectAttachmentsToDocumentAgent(projectCreated);
+    }
+
+
 }
 //>>> Clean Arch / Inbound Adaptor

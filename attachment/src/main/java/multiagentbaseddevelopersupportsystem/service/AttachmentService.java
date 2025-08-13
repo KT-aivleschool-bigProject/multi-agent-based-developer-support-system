@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,17 +15,24 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.AttachmentRepository;
+import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
+import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
 
 @Service
 @RequiredArgsConstructor
@@ -47,7 +56,7 @@ public class AttachmentService {
         "txt", "hwp"
     );
 
-    public Attachment uploadFile(MultipartFile file, Long postId) throws IOException {
+    public Attachment uploadFile(MultipartFile file, Long postId, Long projectId) throws IOException {
         validateFile(file);
         
         String originalFilename = file.getOriginalFilename();
@@ -64,6 +73,7 @@ public class AttachmentService {
         // DB에 메타데이터 저장
         Attachment attachment = Attachment.builder()
                 .postId(postId)
+                .projectId(projectId)
                 .originalName(originalFilename)
                 .storedName(storedFilename)
                 .fileUrl(fileUrl)
@@ -252,4 +262,47 @@ public class AttachmentService {
                 .findFirst()
                 .orElse(storedFilename);
     }
+
+    public List<ProjectAttachmentRequest> sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
+        Long projectId = projectCreated.getProjectId();
+        List<Attachment> files = attachmentRepository.findByProjectId(projectId);
+        List<ProjectAttachmentRequest> result = new java.util.ArrayList<>();
+        if ("azure".equals(storageType) && blobContainerClient != null) {
+            for (Attachment file : files) {
+                ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
+                fileInfo.setFileId(file.getFileId());
+
+                // SAS URL 생성
+                BlobClient blobClient = blobContainerClient.getBlobClient(file.getStoredName());
+                BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
+                OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(1); // 1시간 유효
+                BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime, permission);
+
+                String sasUrl = blobClient.getBlobUrl() + "?" + blobClient.generateSas(values);
+                fileInfo.setSasUrl(sasUrl);
+
+                result.add(fileInfo);
+            }
+        } 
+
+        // === FastAPI 서버로 REST POST 요청 ===
+        String fastApiUrl = "http://fastapi-server:8000/receive-attachments"; // 실제 엔드포인트로 변경
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<List<ProjectAttachmentRequest>> requestEntity = new HttpEntity<>(result, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl, requestEntity, String.class);
+            log.info("FastAPI 응답: {}", response.getBody());
+        } catch (Exception e) {
+            log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
+        }
+
+        return result;
+    }
+
+    
 }
