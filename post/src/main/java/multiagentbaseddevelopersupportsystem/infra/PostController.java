@@ -20,8 +20,8 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping("/init")
-    public ResponseEntity<Long> startPostWriting(@RequestHeader("X-User-Id") Long userId) {
-        Long postId = postService.startPostWriting(userId);
+    public ResponseEntity<Long> startPostWriting(@RequestHeader("X-User-Id") Long userId, @RequestParam Long projectId) {
+        Long postId = postService.startPostWriting(userId, projectId);
         return ResponseEntity.status(201).body(postId);
     }
 
@@ -58,13 +58,14 @@ public class PostController {
 
     @GetMapping("/list")
     public ResponseEntity<Page<PostResponseDto>> getPostList(@PageableDefault(page = 0, size = 10, sort = "postId", direction = Sort.Direction.DESC) Pageable pageable,
+                                                    @RequestParam(value = "projectId") Long projectId,
                                                     @RequestParam(required = false) String searchKeyword) {
         Page<PostResponseDto> list = null;
 
         if(searchKeyword != null && !searchKeyword.isEmpty()) {
-            list = postService.getPostListByKeyword(searchKeyword, pageable);
+            list = postService.getPostListByKeyword(projectId, searchKeyword, pageable);
         } else {
-            list = postService.getPostList(pageable);
+            list = postService.getPostList(projectId, pageable);
         }
 
         return ResponseEntity.ok(list);

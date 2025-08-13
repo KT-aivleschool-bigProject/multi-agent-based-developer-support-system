@@ -7,5 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
-    Page<Post> findByTitleContaining(String searchKeyword, Pageable pageable);
+    Page<Post> findByProjectId(Long projectId, Pageable pageable);
+    Page<Post> findByProjectIdAndTitleContaining(Long projectId, String searchKeyword, Pageable pageable);
 }
