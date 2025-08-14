@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -36,6 +36,15 @@ const AIAssistant = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,11 +109,6 @@ const AIAssistant = () => {
       };
       setMessages(prev => [...prev, aiResponse]);
     }, 1000);
-
-    toast({
-      title: "메시지 전송됨",
-      description: "AI가 응답을 준비하고 있습니다.",
-    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -136,8 +140,8 @@ const AIAssistant = () => {
           </SheetDescription>
         </SheetHeader>
         
-        <div className="flex-1 flex flex-col gap-4">
-          <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 flex flex-col gap-4 min-h-0">
+          <ScrollArea className="flex-1 pr-4 max-h-[calc(100vh-300px)]">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
@@ -170,10 +174,11 @@ const AIAssistant = () => {
                   )}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
           
-          <div className="space-y-2">
+          <div className="space-y-2 pt-4">
             {user?.role === 'team_leader' && (
               <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
                 <FileText className="h-4 w-4 text-muted-foreground" />
