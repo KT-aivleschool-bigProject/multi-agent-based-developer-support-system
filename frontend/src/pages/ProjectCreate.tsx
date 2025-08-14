@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+
+interface TeamMember {
+  name: string;
+  email: string;
+  role: string;
+}
 
 const ProjectCreate = () => {
   const { toast } = useToast();
@@ -54,25 +60,26 @@ const ProjectCreate = () => {
       });
       return;
     }
-    canonical.href = href;
-  }, []);
+    setCurrentStep(2);
+  };
 
   const handleProjectCreate = () => {
-    if (!project.name.trim() || !project.description.trim()) {
+    if (!teamData.name) {
       toast({
-        title: '오류',
-        description: '프로젝트 명과 프로젝트 설명을 모두 입력해주세요.',
-        variant: 'destructive',
+        title: "오류",
+        description: "팀 이름을 입력해주세요.",
+        variant: "destructive"
       });
       return;
     }
-
-    // TODO: Supabase에 프로젝트 생성 로직 추가
+    
+    // TODO: Supabase에 프로젝트 및 팀 생성 로직 추가
     toast({
-      title: '프로젝트 생성 완료',
-      description: `${project.name} 프로젝트가 생성되었습니다.`,
+      title: "프로젝트 생성 완료",
+      description: `${projectData.name} 프로젝트와 ${teamData.name} 팀이 생성되었습니다.`
     });
-
+    
+    // 프로젝트 관리 페이지로 이동
     navigate('/projects');
   };
 
@@ -116,10 +123,10 @@ const ProjectCreate = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           {/* 헤더 */}
-          <header className="text-center mb-8">
+          <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-primary/10 p-3 rounded-full">
                 <Sparkles className="h-6 w-6 text-primary" />
@@ -248,35 +255,136 @@ const ProjectCreate = () => {
                       </div>
                     </div>
                   </div>
-
+                </div>
+              </div>
+            ) : (
+              /* 팀 생성 단계 */
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStep(1)}
+                    className="p-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
                   <div>
-                    <Label htmlFor="project-description">프로젝트 설명 *</Label>
-                    <Textarea
-                      id="project-description"
-                      value={project.description}
-                      onChange={(e) => setProject((prev) => ({ ...prev, description: e.target.value }))}
-                      placeholder="프로젝트의 목적과 핵심 기능을 간단히 설명해주세요"
-                      className="min-h-[120px]"
-                    />
+                    <h2 className="text-lg font-semibold">팀 구성</h2>
+                    <p className="text-sm text-muted-foreground">함께 할 팀원들을 추가하여 역할을 설정해주세요</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="team-name">팀명 *</Label>
+                      <Input
+                        id="team-name"
+                        value={teamData.name}
+                        onChange={(e) => setTeamData({...teamData, name: e.target.value})}
+                        placeholder="예: Frontend Warriors"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="team-description">팀 설명 (선택사항)</Label>
+                      <Input
+                        id="team-description"
+                        value={teamData.description}
+                        onChange={(e) => setTeamData({...teamData, description: e.target.value})}
+                        placeholder="팀의 목표나 특징을 간단히 설명하세요"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>팀원 추가</Label>
+                    <div className="grid grid-cols-12 gap-2">
+                      <div className="col-span-3">
+                        <Input
+                          placeholder="이름"
+                          value={newMember.name}
+                          onChange={(e) => setNewMember({...newMember, name: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <Input
+                          placeholder="email@example.com"
+                          type="email"
+                          value={newMember.email}
+                          onChange={(e) => setNewMember({...newMember, email: e.target.value})}
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="역할 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roleOptions.slice(1).map((role) => (
+                              <SelectItem key={role} value={role}>{role}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-1">
+                        <Button type="button" onClick={addTeamMember} size="sm" className="w-full">
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {teamData.members.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">팀원 목록</p>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {teamData.members.map((member, index) => (
+                            <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{member.name}</span>
+                                <span className="text-sm text-muted-foreground">{member.email}</span>
+                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{member.role}</span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTeamMember(index)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* 하단 버튼 */}
-              <div className="flex justify-between pt-6 mt-6 border-t">
-                <Button variant="outline" onClick={() => navigate('/projects')}>
-                  취소
-                </Button>
+            {/* 하단 버튼 */}
+            <div className="flex justify-between pt-6 mt-6 border-t">
+              <Button variant="outline" onClick={() => navigate('/projects')}>
+                취소
+              </Button>
+              {currentStep === 1 ? (
+                <Button onClick={handleNextStep}>다음</Button>
+              ) : (
                 <Button onClick={handleProjectCreate}>프로젝트 생성</Button>
-              </div>
+              )}
             </div>
-          </section>
+          </div>
         </div>
-      </main>
+      </div>
 
       {/* 챗봇 버튼 */}
       <div className="fixed bottom-6 right-6">
-        <Button size="lg" className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow">
+        <Button
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        >
           <Sparkles className="h-6 w-6" />
         </Button>
       </div>
