@@ -5,7 +5,15 @@ import interactionPlugin from '@fullcalendar/interaction';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, Eye } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 // ✅ .env에서 값 읽기 (Vite: import.meta.env)
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -30,6 +38,8 @@ const Calendar = () => {
   // 구글 캘린더 이벤트 상태 (사이드패널용: my-calendar 전용)
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   // 이번 주(월~일) 범위 계산 함수
   const getWeekRange = () => {
@@ -95,20 +105,21 @@ const Calendar = () => {
           // 리스트용 가공 필드
           const startDate = startISO ? new Date(startISO) : null;
 
-                      return {
-              id: item.id ?? `google-${index}`,
-              title: item.summary || '제목 없음',
-              time: item.start?.dateTime
-                ? new Date(item.start.dateTime).toLocaleTimeString('ko-KR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '종일',
-              location: item.location || '장소 없음',
-              startTime: startISO || '',
-              endTime: endISO || '',
-              startDate,
-            };
+          return {
+            id: item.id ?? `google-${index}`,
+            title: item.summary || '제목 없음',
+            description: item.description || '', // description 필드 추가
+            time: item.start?.dateTime
+              ? new Date(item.start.dateTime).toLocaleTimeString('ko-KR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : '종일',
+            location: item.location || '장소 없음',
+            startTime: startISO || '',
+            endTime: endISO || '',
+            startDate,
+          };
         }) ?? [];
 
       setGoogleEvents(events);
@@ -160,6 +171,12 @@ const Calendar = () => {
     const mm = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
     // 종일 이벤트(date)면 시간이 00:00으로 잡힐 수 있습니다.
+  };
+
+  // 상세보기 다이얼로그 열기
+  const openDetailDialog = (event: any) => {
+    setSelectedEvent(event);
+    setIsDetailDialogOpen(true);
   };
 
   return (
@@ -252,6 +269,16 @@ const Calendar = () => {
                             </div>
                           )}
                         </div>
+                        <div className="flex justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDetailDialog(ev)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            상세보기
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -277,13 +304,23 @@ const Calendar = () => {
                 ) : (
                   myCalEventsThisWeek.map((ev) => (
                     <div key={ev.id} className="py-2">
-                      <div>
-                        <p className="font-medium">{ev.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {ev.startDate?.toLocaleDateString()} • {ev.startTime && ev.endTime
-                            ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}`
-                            : ev.time}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{ev.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {ev.startDate?.toLocaleDateString()} • {ev.startTime && ev.endTime
+                              ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}`
+                              : ev.time}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openDetailDialog(ev)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          상세보기
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -293,6 +330,48 @@ const Calendar = () => {
           </Card>
         </div>
       </div>
+
+      {/* 상세보기 다이얼로그 */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.title}</DialogTitle>
+            <DialogDescription>
+              일정 상세 정보
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">날짜 및 시간</h4>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  {selectedEvent.startDate?.toLocaleDateString()} • {selectedEvent.startTime && selectedEvent.endTime
+                    ? `${fmtTime(selectedEvent.startTime)} - ${fmtTime(selectedEvent.endTime)}`
+                    : selectedEvent.time}
+                </div>
+              </div>
+              {selectedEvent.location && selectedEvent.location !== '장소 없음' && (
+                <div>
+                  <h4 className="font-semibold mb-2">장소</h4>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    {selectedEvent.location}
+                  </div>
+                </div>
+              )}
+              {selectedEvent.description && (
+                <div>
+                  <h4 className="font-semibold mb-2">일정 설명</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedEvent.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
