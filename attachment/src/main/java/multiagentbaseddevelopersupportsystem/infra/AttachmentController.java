@@ -30,7 +30,7 @@ public class AttachmentController {
         return ResponseEntity.ok(attachment);
     }
 
-    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "projectId")
+    @PostMapping(value="/uploadcreatingproject", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "projectId")
     public ResponseEntity<Attachment> uploadFileCreatingProject(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "projectId") Long projectId) throws IOException {
