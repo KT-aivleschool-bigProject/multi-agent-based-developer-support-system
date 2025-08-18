@@ -114,6 +114,7 @@ public class PostService {
             .userId(null)
             .projectId(event.getProjectId())
             .status(PostStatus.PUBLISHED)
+            .createdAt(new Date())
             .build();
         Long postId = postRepository.save(post).getPostId();
         PostCreatedByAttachmentAgent postCreatedByAttachmentAgent = new PostCreatedByAttachmentAgent();

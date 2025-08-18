@@ -11,4 +11,6 @@ public class ProjectAttachmentAutoCreated extends AbstractEvent{
     private Long fileId;
     private String title;
     private String content;
+    private boolean hasApiSpec;  
+    private String yaml; 
 }

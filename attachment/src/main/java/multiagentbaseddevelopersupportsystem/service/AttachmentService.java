@@ -282,8 +282,8 @@ public class AttachmentService {
         if ("azure".equals(storageType) && blobContainerClient != null) {
             for (Attachment file : files) {
                 ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
-                fileInfo.setProjectId(projectId);
-                fileInfo.setFileId(file.getFileId());
+                fileInfo.setProjectId(String.valueOf(projectId));
+                fileInfo.setFileId(String.valueOf(file.getFileId()));
 
                 // SAS URL 생성
                 BlobClient blobClient = blobContainerClient.getBlobClient(file.getStoredName());
@@ -300,7 +300,7 @@ public class AttachmentService {
 
         for(ProjectAttachmentRequest fileInfo : result) {
                 // === FastAPI 서버로 REST POST 요청 ===
-            String fastApiUrl = "http://dc59caee479e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+            String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
@@ -316,6 +316,10 @@ public class AttachmentService {
                     requestEntity,
                     new ParameterizedTypeReference<ProjectAttachmentAutoCreated>() {}
                 );
+                if (response.getStatusCode().is2xxSuccessful()) {
+                } else {
+                    log.error("FastAPI 응답 코드: {}", response.getStatusCode());
+                }
                 ProjectAttachmentAutoCreated body = response.getBody();
                 if (body != null) {
                     log.info("FastAPI 응답: {}", body);
