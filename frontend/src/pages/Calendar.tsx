@@ -1,9 +1,9 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import googleCalendarPlugin from '@fullcalendar/google-calendar';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Eye } from 'lucide-react';
 import {
@@ -12,52 +12,137 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 
-// ✅ .env에서 값 읽기 (Vite: import.meta.env)
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY;
+// ✅ .env (Vite)
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY as string; // 공개 캘린더용
 const HOLIDAY_CAL_ID = import.meta.env.VITE_GOOGLE_CAL_HOLIDAY_ID as string;
-const MY_CAL_ID = import.meta.env.VITE_GOOGLE_CAL_MY_ID as string;
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string; // OAuth 클라이언트 ID(환경별 공용)
 
-// ✅ 연동할 Google 캘린더들 (공개 캘린더여야 API Key로 조회 가능)
-const CALENDARS = [
+// ✅ 스코프: 로그인 사용자 이메일 + 캘린더 읽기 전용
+const SCOPES = 'openid email https://www.googleapis.com/auth/calendar.readonly';
+
+// 공개 캘린더 소스 (API Key로만 동작)
+const PUBLIC_SOURCES = [
   {
-    id: 'calendar',
+    id: 'holiday',
     googleCalendarId: HOLIDAY_CAL_ID,
     color: '#b91c1c', // 공휴일
+    textColor: '#fff',
   },
-  {
-    id: 'my-calendar',
-    googleCalendarId: MY_CAL_ID,
-    color: '#4682B4', // 개인 일정
-  }
 ];
 
-const Calendar = () => {
-  // 구글 캘린더 이벤트 상태 (사이드패널용: my-calendar 전용)
-  const [googleEvents, setGoogleEvents] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<any>(null);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+// 타입들
+type SideEvent = {
+  id: string;
+  title: string;
+  description: string;
+  time: string; // "HH:mm" or '종일'
+  location: string;
+  startTime: string; // ISO
+  endTime: string;   // ISO
+  startDate: Date | null;
+};
 
-  // 이번 주(월~일) 범위 계산 함수
+type CalendarListItem = { id: string; summary: string; accessRole: string };
+type TokenClient = ReturnType<any>;
+
+const GOOGLE_CALENDAR_TOKENS_KEY = 'google_calendar_tokens'; // 구글 캘린더용 OAuth 토큰
+
+// 구글 OAuth 토큰 정보 타입
+type GoogleTokenInfo = {
+  access_token: string;
+  refresh_token?: string;
+  expires_at: number; // 만료 시간 (timestamp)
+  user_email: string;
+  scope: string;
+};
+
+// 구글 토큰 관리 함수들
+const GoogleTokenManager = {
+  // 토큰 저장
+  save: (tokenInfo: GoogleTokenInfo) => {
+    try {
+      localStorage.setItem(GOOGLE_CALENDAR_TOKENS_KEY, JSON.stringify(tokenInfo));
+      console.log('[GoogleToken] 토큰 저장 완료');
+    } catch (error) {
+      console.error('[GoogleToken] 토큰 저장 실패:', error);
+    }
+  },
+
+  // 토큰 복원
+  get: (): GoogleTokenInfo | null => {
+    try {
+      const stored = localStorage.getItem(GOOGLE_CALENDAR_TOKENS_KEY);
+      if (!stored) return null;
+      
+      const tokenInfo: GoogleTokenInfo = JSON.parse(stored);
+      
+      // 토큰이 만료되었는지 확인
+      if (Date.now() >= tokenInfo.expires_at) {
+        console.log('[GoogleToken] 토큰 만료됨, 삭제');
+        localStorage.removeItem(GOOGLE_CALENDAR_TOKENS_KEY);
+        return null;
+      }
+      
+      console.log('[GoogleToken] 저장된 토큰 복원됨');
+      return tokenInfo;
+    } catch (error) {
+      console.error('[GoogleToken] 토큰 복원 실패:', error);
+      localStorage.removeItem(GOOGLE_CALENDAR_TOKENS_KEY);
+      return null;
+    }
+  },
+
+  // 토큰 삭제
+  clear: () => {
+    localStorage.removeItem(GOOGLE_CALENDAR_TOKENS_KEY);
+    console.log('[GoogleToken] 토큰 삭제 완료');
+  },
+
+  // 토큰 유효성 검사
+  isValid: (tokenInfo: GoogleTokenInfo): boolean => {
+    return Date.now() < tokenInfo.expires_at;
+  }
+};
+
+const Calendar: React.FC = () => {
+  // ===== OAuth / 사용자 상태 =====
+  const tokenClientRef = useRef<TokenClient | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true); // 초기화 상태 추가
+
+  // ===== 사용자 계정 내 캘린더 목록 & 선택 =====
+  const [calendarList, setCalendarList] = useState<CalendarListItem[]>([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string>('primary');
+
+  // ===== 사이드패널용 이벤트 상태 (선택된 개인 캘린더 기준) =====
+  const [googleEvents, setGoogleEvents] = useState<SideEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<SideEvent | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
+
+  // 자동 새로고침 간격 (5분)
+  const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+  // ===== 날짜 범위 유틸 =====
   const getWeekRange = () => {
     const now = new Date();
     const weekStart = new Date(now);
     const dow = now.getDay(); // 0(일)~6(토)
-    const daysToMonday = dow === 0 ? 6 : dow - 1; // 월요일 시작
+    const daysToMonday = dow === 0 ? 6 : dow - 1;
     weekStart.setDate(now.getDate() - daysToMonday);
     weekStart.setHours(0, 0, 0, 0);
 
     const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6); // 월요일 + 6 = 일요일
+    weekEnd.setDate(weekStart.getDate() + 6);
     weekEnd.setHours(23, 59, 59, 999);
 
     return { weekStart, weekEnd };
   };
 
-  // 오늘 범위
   const getTodayRange = () => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -66,103 +151,374 @@ const Calendar = () => {
     return { todayStart, todayEnd };
   };
 
-  // 구글 캘린더에서 이번 주(월~일) 이벤트 가져오기 (my-calendar만)
+  // 날짜 비교 헬퍼 함수 추가
+  const isSameDate = (date1: Date, date2: Date) => {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  };
+
+  const isDateInRange = (date: Date, start: Date, end: Date) => {
+    return date >= start && date <= end;
+  };
+
+  // ===== 캘린더 목록 로드 함수 =====
+  const loadCalendarList = async (token: string) => {
+    try {
+      const list = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=250', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json());
+      console.log('[CalendarList] 전체 목록:', list);
+
+      const items: CalendarListItem[] = (list.items || []).map((c: any) => ({
+        id: c.id,
+        summary: c.summary,
+        accessRole: c.accessRole,
+      }));
+      setCalendarList(items);
+
+      // 기본 선택 캘린더 설정 (owner 우선, 없으면 primary 유지)
+      const owner = items.find((c) => c.accessRole === 'owner');
+      if (owner?.id) {
+        console.log('[CalendarList] 기본 선택 캘린더(owner):', owner.id);
+        setSelectedCalendarId(owner.id);
+      }
+    } catch (e) {
+      console.error('❌ [CalendarList] 목록 로드 실패:', e);
+    }
+  };
+
+  // ===== 컴포넌트 초기화 시 저장된 토큰 복원 =====
+  useEffect(() => {
+    const initializeFromStoredTokens = async () => {
+      console.log('[Init] 저장된 구글 토큰 확인 중...');
+      const storedTokens = GoogleTokenManager.get();
+      
+      if (storedTokens && GoogleTokenManager.isValid(storedTokens)) {
+        console.log('[Init] 유효한 구글 토큰 발견, 자동 로그인');
+        setAccessToken(storedTokens.access_token);
+        setUserEmail(storedTokens.user_email);
+        
+        // 캘린더 목록과 이벤트 자동 로드
+        await loadCalendarList(storedTokens.access_token);
+        await fetchGoogleEvents();
+      } else {
+        console.log('[Init] 저장된 구글 토큰 없음 또는 만료됨');
+      }
+      
+      setIsInitializing(false);
+    };
+
+    initializeFromStoredTokens();
+  }, []);
+
+  // ===== OAuth: GIS 스크립트 로드 & 토큰 클라이언트 초기화 =====
+  useEffect(() => {
+    console.log('[Init] CLIENT_ID =', CLIENT_ID);
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      console.log('[OAuth] GIS 스크립트 로드 완료');
+
+      // @ts-ignore
+      const googleObj = window.google;
+      if (!googleObj?.accounts?.oauth2) {
+        console.error('❌ [OAuth] window.google.accounts.oauth2 가 없습니다.');
+        return;
+      }
+
+      tokenClientRef.current = googleObj.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: 'consent', // 첫 로그인 시 동의창
+        callback: async (resp: any) => {
+          console.log('[OAuth] 토큰 응답:', resp);
+          if (resp?.error) {
+            console.error('❌ [OAuth] 에러:', resp.error, resp);
+            return;
+          }
+          if (!resp?.access_token) {
+            console.warn('[OAuth] access_token 없음');
+            return;
+          }
+          setAccessToken(resp.access_token);
+
+          // 로그인 사용자 확인
+          try {
+            const me = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+              headers: { Authorization: `Bearer ${resp.access_token}` },
+            }).then((r) => r.json());
+            console.log('[OAuth] 로그인 사용자 정보:', me);
+            setUserEmail(me?.email ?? null);
+
+            // 구글 토큰 정보를 로컬 스토리지에 저장 (1시간 후 만료)
+            const tokenInfo: GoogleTokenInfo = {
+              access_token: resp.access_token,
+              refresh_token: resp.refresh_token,
+              expires_at: Date.now() + 3600 * 1000, // 1시간
+              user_email: me?.email ?? '',
+              scope: SCOPES,
+            };
+            
+            GoogleTokenManager.save(tokenInfo);
+            console.log('[OAuth] 구글 토큰 저장 완료');
+
+            // 사용자의 캘린더 목록 로드
+            try {
+              await loadCalendarList(resp.access_token);
+            } catch (e) {
+              console.error('❌ [CalendarList] 목록 로드 실패:', e);
+            }
+          } catch (e) {
+            console.error('❌ [OAuth] userinfo 호출 실패:', e);
+          }
+        },
+      });
+
+      console.log('[OAuth] tokenClient 초기화 완료');
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const signIn = () => {
+    console.log('[Auth] Google 로그인 요청');
+    tokenClientRef.current?.requestAccessToken({ prompt: 'consent' });
+  };
+
+  const signOut = () => {
+    console.log('[Auth] 로그아웃');
+    setAccessToken(null);
+    setUserEmail(null);
+    setCalendarList([]);
+    setSelectedCalendarId('primary');
+    setGoogleEvents([]);
+    GoogleTokenManager.clear(); // 로그아웃 시 토큰 삭제
+  };
+
+  // ===== 개인 캘린더: 주간 이벤트 불러오기 (사이드패널 전용) =====
   const fetchGoogleEvents = async () => {
+    console.log('[Events] 주간 이벤트 불러오기 시작...');
     try {
       setIsLoading(true);
-      const personalCalendar = CALENDARS.find(c => c.id === 'my-calendar');
-      if (!personalCalendar) {
+      if (!accessToken) {
+        console.warn('[Events] accessToken 없음 → 이벤트 초기화');
         setGoogleEvents([]);
         return;
       }
 
       const { weekStart, weekEnd } = getWeekRange();
+      console.log('[Events] 요청 범위:', weekStart, '~', weekEnd);
 
-      const url =
-        `https://www.googleapis.com/calendar/v3/calendars/` +
-        `${encodeURIComponent(personalCalendar.googleCalendarId)}` +
-        `/events?key=${encodeURIComponent(GOOGLE_API_KEY)}` +
-        `&timeMin=${encodeURIComponent(weekStart.toISOString())}` +
-        `&timeMax=${encodeURIComponent(weekEnd.toISOString())}` +
-        `&maxResults=100&singleEvents=true&orderBy=startTime`;
+      const calId = selectedCalendarId || 'primary';
+      console.log('[Events] 대상 캘린더 ID:', calId);
 
-      const response = await fetch(url);
+      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+      url.searchParams.set('singleEvents', 'true');
+      url.searchParams.set('orderBy', 'startTime');
+      url.searchParams.set('timeMin', weekStart.toISOString());
+      url.searchParams.set('timeMax', weekEnd.toISOString());
+      url.searchParams.set('maxResults', '250');
+
+      const response = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (!response.ok) {
-        console.error('Google Calendar API 응답 오류:', response.status, response.statusText);
+        console.error('[Events] API 응답 오류:', response.status, response.statusText);
         setGoogleEvents([]);
         return;
       }
 
       const data = await response.json();
+      console.log('[Events] 불러온 데이터:', data);
 
-      const events =
-        data.items?.map((item: any, index: number) => {
-          // 시작/종료 (종일 이벤트 date, 시간 이벤트 dateTime)
-          const startISO = item.start?.dateTime || item.start?.date;
-          const endISO = item.end?.dateTime || item.end?.date;
+      const events: SideEvent[] = (data.items || []).map((item: any, index: number) => {
+        const startISO = item.start?.dateTime || item.start?.date;
+        const endISO = item.end?.dateTime || item.end?.date;
+        const startDate = startISO ? new Date(startISO) : null;
+        
+        // 종일 이벤트의 경우 시작 시간을 00:00으로 설정
+        let timeDisplay = '종일';
+        if (item.start?.dateTime) {
+          timeDisplay = new Date(item.start.dateTime).toLocaleTimeString('ko-KR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+        }
+        
+        return {
+          id: item.id ?? `google-${index}`,
+          title: item.summary || '제목 없음',
+          description: item.description || '',
+          time: timeDisplay,
+          location: item.location || '장소 없음',
+          startTime: startISO || '',
+          endTime: endISO || '',
+          startDate,
+        };
+      });
 
-          // 리스트용 가공 필드
-          const startDate = startISO ? new Date(startISO) : null;
-
-          return {
-            id: item.id ?? `google-${index}`,
-            title: item.summary || '제목 없음',
-            description: item.description || '', // description 필드 추가
-            time: item.start?.dateTime
-              ? new Date(item.start.dateTime).toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : '종일',
-            location: item.location || '장소 없음',
-            startTime: startISO || '',
-            endTime: endISO || '',
-            startDate,
-          };
-        }) ?? [];
-
+      console.log('[Events] 변환된 이벤트 개수:', events.length);
+      console.log('[Events] 변환된 이벤트들:', events);
       setGoogleEvents(events);
+      setLastRefreshTime(new Date());
+      console.log('[Events] 캘린더 새로고침 완료:', new Date().toLocaleTimeString());
     } catch (error) {
-      console.error('구글 캘린더 이벤트 가져오기 실패:', error);
+      console.error('[Events] 이벤트 가져오기 실패:', error);
       setGoogleEvents([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 이번 주(월~일) 범위로 fetch
+  // 초기 로드 + 5분마다 자동 새로고침 (토큰/선택 캘린더 바뀌면 재설정)
   useEffect(() => {
+    if (!accessToken) return; // 로그인 후 동작
+    console.log('[Events] accessToken 또는 selectedCalendarId 변경 → 새로 로드');
     fetchGoogleEvents();
-  }, []);
+    const id = setInterval(fetchGoogleEvents, REFRESH_INTERVAL);
+    return () => clearInterval(id);
+  }, [accessToken, selectedCalendarId]);
 
-  // ✅ FullCalendar가 사용할 "여러 소스" 정의: 구글 캘린더만 사용
-  const eventSources = useMemo(
-    () => [
-      // 구글 캘린더 소스들
-      ...CALENDARS.map(c => ({
-        id: c.id,
-        googleCalendarId: c.googleCalendarId,
-        color: c.color,
-        textColor: '#fff',
-      })),
-    ],
-    []
+  // ===== FullCalendar eventSources =====
+  const personalSource = useMemo(
+    () => ({
+      id: 'my-calendar',
+      color: '#4682B4',
+      textColor: '#fff',
+      events: async (info: any, success: any, failure: any) => {
+        console.log('[FullCalendar] 이벤트 요청 범위:', info.startStr, '→', info.endStr);
+        try {
+          if (!accessToken) {
+            console.warn('[FullCalendar] accessToken 없음 → 빈 이벤트 반환');
+            success([]);
+            return;
+          }
+          const calId = selectedCalendarId || 'primary';
+          console.log('[FullCalendar] 대상 캘린더 ID:', calId);
+
+          const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+          url.searchParams.set('singleEvents', 'true');
+          url.searchParams.set('orderBy', 'startTime');
+          url.searchParams.set('timeMin', new Date(info.startStr).toISOString());
+          url.searchParams.set('timeMax', new Date(info.endStr).toISOString());
+          url.searchParams.set('maxResults', '2500');
+
+          const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${accessToken}` } });
+          if (!res.ok) throw new Error(`GCal error ${res.status} ${res.statusText}`);
+          const data = await res.json();
+
+          console.log('[FullCalendar] 불러온 이벤트 개수:', (data.items || []).length);
+
+          const fcEvents = (data.items || []).map((e: any) => ({
+            id: e.id,
+            title: e.summary || '(제목 없음)',
+            start: e.start?.dateTime || e.start?.date,
+            end: e.end?.dateTime || e.end?.date,
+            extendedProps: {
+              location: e.location || '',
+              description: e.description || '',
+            },
+          }));
+          success(fcEvents);
+        } catch (err) {
+          console.error('[FullCalendar] 이벤트 로드 실패:', err);
+          failure(err);
+        }
+      },
+    }),
+    [accessToken, selectedCalendarId]
   );
 
-  // 오늘/이번 주 범위
+  const eventSources = useMemo(
+    () => [
+      ...PUBLIC_SOURCES, // 공개 캘린더(공휴일): plugin + API KEY
+      personalSource,    // 개인 캘린더(비공개): OAuth 토큰
+    ],
+    [personalSource]
+  );
+
+  // ===== 유틸 =====
   const { todayStart, todayEnd } = getTodayRange();
   const { weekStart, weekEnd } = getWeekRange();
 
-  // 사이드패널: my-calendar 데이터만 사용 (이번 주 전체)
-  const myCalEvents = googleEvents; // 이미 my-calendar만 fetch
-  const myCalEventsToday = myCalEvents
-    .filter(ev => ev.startDate && ev.startDate >= todayStart && ev.startDate <= todayEnd)
-    .sort((a, b) => (a.startDate?.getTime() || 0) - (b.startDate?.getTime() || 0));
+  const myCalEvents = googleEvents;
+  
+  // 오늘 일정 필터링 개선
+  const myCalEventsToday = useMemo(() => {
+    console.log('[Filter] 오늘 일정 필터링 시작');
+    console.log('[Filter] 전체 이벤트 개수:', myCalEvents.length);
+    console.log('[Filter] 오늘 범위:', todayStart, '~', todayEnd);
+    
+    const todayEvents = myCalEvents.filter((ev) => {
+      if (!ev.startDate) {
+        console.log('[Filter] startDate가 없는 이벤트:', ev);
+        return false;
+      }
+      
+      // 종일 이벤트의 경우 시작 날짜가 오늘인지 확인
+      if (ev.time === '종일') {
+        const isToday = isSameDate(ev.startDate, new Date());
+        console.log('[Filter] 종일 이벤트:', ev.title, '날짜:', ev.startDate, '오늘여부:', isToday);
+        return isToday;
+      }
+      
+      // 시간이 있는 이벤트의 경우 오늘 범위 내에 있는지 확인
+      const isInTodayRange = isDateInRange(ev.startDate, todayStart, todayEnd);
+      console.log('[Filter] 시간 이벤트:', ev.title, '시간:', ev.startDate, '오늘범위여부:', isInTodayRange);
+      return isInTodayRange;
+    });
+    
+    console.log('[Filter] 오늘 일정 개수:', todayEvents.length);
+    return todayEvents.sort((a, b) => (a.startDate?.getTime() || 0) - (b.startDate?.getTime() || 0));
+  }, [myCalEvents, todayStart, todayEnd]);
 
-  const myCalEventsThisWeek = myCalEvents
-    .filter(ev => ev.startDate && ev.startDate >= weekStart && ev.startDate <= weekEnd)
-    .sort((a, b) => (a.startDate?.getTime() || 0) - (b.startDate?.getTime() || 0));
+  // 이번 주 일정 필터링 개선
+  const myCalEventsThisWeek = useMemo(() => {
+    console.log('[Filter] 이번 주 일정 필터링 시작');
+    console.log('[Filter] 전체 이벤트 개수:', myCalEvents.length);
+    console.log('[Filter] 주간 범위:', weekStart, '~', weekEnd);
+    
+    const weekEvents = myCalEvents.filter((ev) => {
+      if (!ev.startDate) {
+        console.log('[Filter] startDate가 없는 이벤트:', ev);
+        return false;
+      }
+      
+      // 종일 이벤트의 경우 주간 범위 내에 있는지 확인
+      if (ev.time === '종일') {
+        const isInWeekRange = isDateInRange(ev.startDate, weekStart, weekEnd);
+        console.log('[Filter] 종일 이벤트:', ev.title, '날짜:', ev.startDate, '주간범위여부:', isInWeekRange);
+        return isInWeekRange;
+      }
+      
+      // 시간이 있는 이벤트의 경우 주간 범위 내에 있는지 확인
+      const isInWeekRange = isDateInRange(ev.startDate, weekStart, weekEnd);
+      console.log('[Filter] 시간 이벤트:', ev.title, '시간:', ev.startDate, '주간범위여부:', isInWeekRange);
+      return isInWeekRange;
+    });
+    
+    console.log('[Filter] 이번 주 일정 개수:', weekEvents.length);
+    return weekEvents.sort((a, b) => (a.startDate?.getTime() || 0) - (b.startDate?.getTime() || 0));
+  }, [myCalEvents, weekStart, weekEnd]);
+
+  // 디버깅을 위한 렌더링 시 상태 로그
+  useEffect(() => {
+    console.log('[Render] 현재 상태:', {
+      accessToken: !!accessToken,
+      userEmail,
+      selectedCalendarId,
+      googleEventsCount: googleEvents.length,
+      todayEventsCount: myCalEventsToday.length,
+      weekEventsCount: myCalEventsThisWeek.length,
+      isLoading
+    });
+  });
 
   const fmtTime = (timeStr: string) => {
     if (!timeStr) return '';
@@ -170,11 +526,9 @@ const Calendar = () => {
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
-    // 종일 이벤트(date)면 시간이 00:00으로 잡힐 수 있습니다.
   };
 
-  // 상세보기 다이얼로그 열기
-  const openDetailDialog = (event: any) => {
+  const openDetailDialog = (event: SideEvent) => {
     setSelectedEvent(event);
     setIsDetailDialogOpen(true);
   };
@@ -182,10 +536,25 @@ const Calendar = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">캘린더</h1>
-        <p className="text-muted-foreground">
-          일정을 관리하고 팀 미팅을 확인하세요.
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {!accessToken ? (
+            <Button onClick={signIn}>Google 로그인</Button>
+          ) : (
+            <>
+              <span className="text-sm text-muted-foreground">로그인: {userEmail ?? '(알 수 없음)'}</span>
+            </>
+          )}
+        </div>
+        <h1 className="text-3xl font-bold mt-4 mb-2">캘린더</h1>
+        <p className="text-muted-foreground">일정을 관리하고 팀 미팅을 확인하세요.</p>
+        <p className="text-xs text-muted-foreground mt-1">마지막 업데이트: {lastRefreshTime.toLocaleTimeString('ko-KR')}</p>
+        
+        {/* 초기화 중 표시 */}
+        {isInitializing && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-700">구글 캘린더 연결 상태를 확인하는 중...</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-8 gap-6">
@@ -197,88 +566,72 @@ const Calendar = () => {
                   plugins={[dayGridPlugin, interactionPlugin, googleCalendarPlugin]}
                   initialView="dayGridMonth"
                   eventSources={eventSources}
-                  googleCalendarApiKey={GOOGLE_API_KEY}
+                  googleCalendarApiKey={GOOGLE_API_KEY} // 공개 캘린더용
                   height="auto"
-                  headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: ''
-                  }}
+                  headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
                   locale="ko"
-                  buttonText={{
-                    today: 'today',
-                    prev: '<',
-                    next: '>'
-                  }}
+                  buttonText={{ today: 'today', prev: '<', next: '>' }}
                   eventDisplay="block"
                   eventContent={(arg) => {
                     const title = arg.event.title || '';
                     const shortTitle = title.length > 6 ? title.substring(0, 6) + '..' : title;
-                    const calendar = CALENDARS.find(c => c.id === arg.event.source?.id);
-                    const themeColor = calendar ? calendar.color : '#666';
+                    // holiday 색상 유지, 개인 소스는 personalSource.color 적용됨
+                    const color = (arg.event.source as any)?.internalEventSource?._raw?.color || '#666';
                     return {
-                      html: `<div style="font-size:12px;font-weight:500;color:#fff;text-align:center;line-height:1.2;word-wrap:break-word;max-width:100%;background-color:${themeColor};padding:2px 4px;border-radius:3px;">${shortTitle}</div>`
+                      html: `<div style="font-size:12px;font-weight:500;color:#fff;text-align:center;line-height:1.2;word-wrap:break-word;max-width:100%;background-color:${color};padding:2px 4px;border-radius:3px;">${shortTitle}</div>`
                     };
                   }}
-                  dateClick={(info) => {
-                    console.log('Selected date:', info.dateStr);
+                  datesSet={(info) => {
+                    console.log('[FullCalendar] 뷰 변경:', info.startStr, '→', info.endStr);
                   }}
                   eventClick={(info) => {
                     info.jsEvent.preventDefault();
+                    console.log('[FullCalendar] 이벤트 클릭:', {
+                      id: info.event.id,
+                      title: info.event.title,
+                      start: info.event.start,
+                      end: info.event.end,
+                    });
                     if (info.event.url) {
                       window.open(info.event.url, '_blank', 'noopener,noreferrer');
-                    } else {
-                      console.log('Event clicked:', info.event.title);
                     }
                   }}
                 />
-                             </div>
-             </CardContent>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
         <div className="lg:col-span-3 space-y-6">
-          {/* 오늘의 일정: my-calendar */}
+          {/* 오늘의 일정 */}
           <Card>
             <CardHeader>
               <CardTitle>오늘의 일정 추천</CardTitle>
               <CardDescription>AI가 추천한 {new Date().toLocaleDateString()} 일정입니다.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {isLoading ? (
                   <div className="text-sm text-muted-foreground">일정을 불러오는 중...</div>
                 ) : myCalEventsToday.length === 0 ? (
                   <div className="text-sm text-muted-foreground">오늘 일정이 없습니다.</div>
                 ) : (
                   myCalEventsToday.map((ev) => (
-                    <div key={ev.id} className="p-4 border rounded-lg">
-                      <div className="space-y-2">
-                        <h3 className="font-semibold">{ev.title}</h3>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {ev.startTime && ev.endTime
-                              ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}`
-                              : ev.time}
-                          </div>
-                          {ev.location && ev.location !== '장소 없음' && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {ev.location}
-                            </div>
-                          )}
+                    <div key={ev.id} className="py-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{ev.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}` : ev.time}
+                            {ev.location && ev.location !== '장소 없음' && (
+                              <span className="ml-2">• {ev.location}</span>
+                            )}
+                          </p>
                         </div>
-                        <div className="flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDetailDialog(ev)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            상세보기
-                          </Button>
-                        </div>
+                        <Button variant="outline" size="sm" onClick={() => openDetailDialog(ev)}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          상세보기
+                        </Button>
                       </div>
                     </div>
                   ))
@@ -287,12 +640,12 @@ const Calendar = () => {
             </CardContent>
           </Card>
 
-          {/* 이번 주 일정: my-calendar - 오늘 제외 X, 주간 전체 */}
+          {/* 이번 주 일정 */}
           <Card>
             <CardHeader>
               <CardTitle>이번 주 일정 추천</CardTitle>
               <CardDescription>
-                AI가 추천한 {weekStart.toLocaleDateString()} ~ {weekEnd.toLocaleDateString()} 주 일정입니다.
+                {weekStart.toLocaleDateString()} ~ {weekEnd.toLocaleDateString()}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -308,16 +661,10 @@ const Calendar = () => {
                         <div>
                           <p className="font-medium">{ev.title}</p>
                           <p className="text-sm text-muted-foreground">
-                            {ev.startDate?.toLocaleDateString()} • {ev.startTime && ev.endTime
-                              ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}`
-                              : ev.time}
+                            {ev.startDate?.toLocaleDateString()} • {ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}` : ev.time}
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDetailDialog(ev)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => openDetailDialog(ev)}>
                           <Eye className="h-4 w-4 mr-1" />
                           상세보기
                         </Button>
@@ -336,9 +683,7 @@ const Calendar = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{selectedEvent?.title}</DialogTitle>
-            <DialogDescription>
-              일정 상세 정보
-            </DialogDescription>
+            <DialogDescription>일정 상세 정보</DialogDescription>
           </DialogHeader>
           {selectedEvent && (
             <div className="space-y-4">
@@ -346,9 +691,7 @@ const Calendar = () => {
                 <h4 className="font-semibold mb-2">날짜 및 시간</h4>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
-                  {selectedEvent.startDate?.toLocaleDateString()} • {selectedEvent.startTime && selectedEvent.endTime
-                    ? `${fmtTime(selectedEvent.startTime)} - ${fmtTime(selectedEvent.endTime)}`
-                    : selectedEvent.time}
+                  {selectedEvent.startDate?.toLocaleDateString()} • {selectedEvent.startTime && selectedEvent.endTime ? `${fmtTime(selectedEvent.startTime)} - ${fmtTime(selectedEvent.endTime)}` : selectedEvent.time}
                 </div>
               </div>
               {selectedEvent.location && selectedEvent.location !== '장소 없음' && (
@@ -363,9 +706,7 @@ const Calendar = () => {
               {selectedEvent.description && (
                 <div>
                   <h4 className="font-semibold mb-2">일정 설명</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedEvent.description}
-                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{selectedEvent.description}</p>
                 </div>
               )}
             </div>
