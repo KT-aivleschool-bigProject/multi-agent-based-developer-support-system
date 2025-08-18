@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class ProjectAttachmentRequest {
-    private Long fileId;
+    private String projectId;
+    private String fileId;
     private String sasUrl;
 }
