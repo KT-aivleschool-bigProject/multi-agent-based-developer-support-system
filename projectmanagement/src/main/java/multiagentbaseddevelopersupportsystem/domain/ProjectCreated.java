@@ -19,6 +19,8 @@ public class ProjectCreated extends AbstractEvent {
     
     public ProjectCreated(ProjectManagement aggregate) {
         super(aggregate);
+        // 프로젝트 ID를 명시적으로 설정
+        this.projectId = aggregate.getProjectId();
     }
 
     public ProjectCreated() {
