@@ -12,10 +12,6 @@ import multiagentbaseddevelopersupportsystem.infra.AbstractEvent;
 public class ProjectCreated extends AbstractEvent {
 
     private Long projectId;
-    private String projectName;
-    private String projectDescription;
-    private ProjectStatus projectStatus;
-    private List<String> inviteEmails;
     
     public ProjectCreated(ProjectManagement aggregate) {
         super(aggregate);
