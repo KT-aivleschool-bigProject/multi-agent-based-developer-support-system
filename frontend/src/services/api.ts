@@ -92,7 +92,7 @@ export const authAPI = {
   },
 
   // 토큰 재발급
-  reissue: async (data: { refreshToken: string }) => {
+  reissue: async (data: { refreshToken: string; accessToken?: string }) => {
     const response = await api.post('/auth/reissue', data);
     return response.data;
   },
