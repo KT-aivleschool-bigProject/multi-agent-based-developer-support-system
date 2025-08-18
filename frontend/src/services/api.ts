@@ -35,19 +35,22 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       const refreshToken = localStorage.getItem('refreshToken');
+      const accessToken = localStorage.getItem('accessToken'); // 만료된 accessToken도 가져오기
+      
       if (refreshToken) {
         try {
           const response = await api.post('/auth/reissue', {
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            accessToken: accessToken  // 만료된 accessToken도 함께 전송
           });
           
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+          localStorage.setItem('accessToken', newAccessToken);
           if (newRefreshToken) {
             localStorage.setItem('refreshToken', newRefreshToken);
           }
           
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
           // 리프레시 토큰도 만료된 경우 로그아웃
