@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 
 //<<< Clean Arch / Inbound Adaptor
@@ -53,7 +51,6 @@ public class ProjectManagementController {
         @RequestParam("projectId") Long projectId, // projectId 추가
         @RequestParam("projectName") String projectName,
         @RequestParam("projectDescription") String projectDescription,
-        @RequestParam(value = "files", required = false) List<MultipartFile> files,
         @RequestParam(value = "projectStatus", required = false) String projectStatus,
         @RequestParam(value = "inviteEmails", required = false) List<String> inviteEmails
     ) throws Exception {
@@ -74,7 +71,6 @@ public class ProjectManagementController {
             createProjectCommand.setProjectStatus(ProjectStatus.valueOf(projectStatus));
         }
         createProjectCommand.setInviteEmails(inviteEmails);
-        createProjectCommand.setFiles(files);
 
         // 도메인 로직 호출 (ProjectCreated 이벤트 발행)
         projectManagement.createProject(createProjectCommand);

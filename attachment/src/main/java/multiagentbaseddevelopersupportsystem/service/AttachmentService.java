@@ -270,6 +270,7 @@ public class AttachmentService {
     }
 
     public void sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
+        System.out.println("💕💕프로젝트 생성 이벤트 수신!");
         Long projectId = projectCreated.getProjectId();
         List<Attachment> files = attachmentRepository.findByProjectId(projectId);
         if (files.isEmpty()) {
@@ -281,7 +282,8 @@ public class AttachmentService {
         if ("azure".equals(storageType) && blobContainerClient != null) {
             for (Attachment file : files) {
                 ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
-                fileInfo.setFileId(file.getFileId());
+                fileInfo.setProjectId(String.valueOf(projectId));
+                fileInfo.setFileId(String.valueOf(file.getFileId()));
 
                 // SAS URL 생성
                 BlobClient blobClient = blobContainerClient.getBlobClient(file.getStoredName());
@@ -296,31 +298,38 @@ public class AttachmentService {
             }
         } 
 
-        // === FastAPI 서버로 REST POST 요청 ===
-        String fastApiUrl = "http://fastapi-server:8000/receive-attachments"; // 실제 엔드포인트로 변경
-        RestTemplate restTemplate = new RestTemplate();
+        for(ProjectAttachmentRequest fileInfo : result) {
+                // === FastAPI 서버로 REST POST 요청 ===
+            String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+            RestTemplate restTemplate = new RestTemplate();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<List<ProjectAttachmentRequest>> requestEntity = new HttpEntity<>(result, headers);
+            HttpEntity<ProjectAttachmentRequest> requestEntity = new HttpEntity<>(fileInfo, headers);
+            log.info("FastAPI 요청 requestEntity: {}", requestEntity);
 
-        try {
-            ResponseEntity<List<ProjectAttachmentAutoCreated>> response = restTemplate.exchange(
-                fastApiUrl,
-                org.springframework.http.HttpMethod.POST,
-                requestEntity,
-                new ParameterizedTypeReference<List<ProjectAttachmentAutoCreated>>() {}
-            );
-            List<ProjectAttachmentAutoCreated> body = response.getBody();
-            if (body != null) {
-                log.info("FastAPI 응답: {}", body);
-                body.forEach(ProjectAttachmentAutoCreated::publishAfterCommit);
-            } else {
-                log.warn("FastAPI 응답이 비어있습니다.");
+            try {
+                ResponseEntity<ProjectAttachmentAutoCreated> response = restTemplate.exchange(
+                    fastApiUrl,
+                    org.springframework.http.HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<ProjectAttachmentAutoCreated>() {}
+                );
+                if (response.getStatusCode().is2xxSuccessful()) {
+                } else {
+                    log.error("FastAPI 응답 코드: {}", response.getStatusCode());
+                }
+                ProjectAttachmentAutoCreated body = response.getBody();
+                if (body != null) {
+                    log.info("FastAPI 응답: {}", body);
+                    body.publishAfterCommit();
+                } else {
+                    log.warn("FastAPI 응답이 비어있습니다.");
+                }
+            } catch (Exception e) {
+                log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
         }
 
         return;
