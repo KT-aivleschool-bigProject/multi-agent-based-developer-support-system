@@ -152,4 +152,64 @@ file:
     cdn-enabled: true          
 
  
+---
+server:
+  port: 8091
+
+spring:
+  profiles: test
+
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true    
+
+  cloud:
+    stream:
+      kafka:
+        binder:
+          brokers: localhost:9092
+        streams:
+          binder:
+            configuration:
+              default:
+                key:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value:
+                  serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+      bindings:
+        event-in:
+          group: attachment
+          destination: multiagentbaseddevelopersupportsystem
+          contentType: application/json
+        event-out:
+          destination: multiagentbaseddevelopersupportsystem
+          contentType: application/json
+ 
+azure:
+  storage:
+    blob:
+      account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
+      account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
+      container-name: ${AZURE_STORAGE_CONTAINER_NAME}
+
+file:
+  storage:
+    type: azure
+    max-file-size: 100MB        
+    allowed-extensions: jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,mp4,avi,mov
+    path-prefix: uploads/       
+    public-access: false       
+    cdn-enabled: true          
 
