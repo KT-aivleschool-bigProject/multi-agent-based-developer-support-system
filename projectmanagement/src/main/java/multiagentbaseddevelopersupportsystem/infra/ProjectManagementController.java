@@ -2,6 +2,8 @@ package multiagentbaseddevelopersupportsystem.infra;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -25,7 +27,7 @@ public class ProjectManagementController {
     ProjectManagementRepository projectManagementRepository;
 
     @PostMapping("/init")
-    public ResponseEntity<Long> initProject(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<Map<String, Long>> initProject(@RequestHeader("X-User-Id") Long userId) {
         // 빈 프로젝트 생성
         ProjectManagement project = new ProjectManagement();
         project.setProjectName(""); // 빈 값 또는 기본값
@@ -34,7 +36,9 @@ public class ProjectManagementController {
 
         projectManagementRepository.save(project);
 
-        return ResponseEntity.status(201).body(project.getProjectId());
+        Map<String, Long> result = new HashMap<>();
+        result.put("projectId", project.getProjectId());
+        return ResponseEntity.status(201).body(result);
     }
 
     @RequestMapping(
@@ -62,13 +66,20 @@ public class ProjectManagementController {
 
         ProjectManagement projectManagement = optionalProject.get();
 
-        // 프로젝트 정보 업데이트
-        projectManagement.setProjectName(projectName);
-        projectManagement.setProjectDescription(projectDescription);
+        // CreateProjectCommand 생성
+        CreateProjectCommand createProjectCommand = new CreateProjectCommand();
+        createProjectCommand.setProjectName(projectName);
+        createProjectCommand.setProjectDescription(projectDescription);
         if (projectStatus != null) {
-            projectManagement.setProjectStatus(ProjectStatus.valueOf(projectStatus));
+            createProjectCommand.setProjectStatus(ProjectStatus.valueOf(projectStatus));
         }
+        createProjectCommand.setInviteEmails(inviteEmails);
+        createProjectCommand.setFiles(files);
 
+        // 도메인 로직 호출 (ProjectCreated 이벤트 발행)
+        projectManagement.createProject(createProjectCommand);
+        
+        // 영속화
         projectManagementRepository.save(projectManagement);
 
         return projectManagement;
