@@ -141,7 +141,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (refreshToken && isTokenValid(refreshToken)) {
         // Access Token이 만료되었지만 Refresh Token이 유효한 경우
         try {
-          const response = await authAPI.reissue({ refreshToken });
+          const response = await authAPI.reissue({ 
+            refreshToken,
+            accessToken: accessToken || ''
+          });
           const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response;
           
           localStorage.setItem('accessToken', newAccessToken);
