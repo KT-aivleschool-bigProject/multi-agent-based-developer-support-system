@@ -16,7 +16,6 @@ interface CommentData {
   content: string;
   userName: string;
   createdAt: string;
-  updatedAt: string;
   postId: number;
 }
 
@@ -38,7 +37,6 @@ interface Post {
   userId: number;
   userName?: string;
   createdAt: string;
-  updatedAt: string;
   viewCount: number;
   commentCount?: number;
 }
