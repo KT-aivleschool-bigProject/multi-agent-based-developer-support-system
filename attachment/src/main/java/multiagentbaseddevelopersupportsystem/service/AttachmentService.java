@@ -270,7 +270,6 @@ public class AttachmentService {
     }
 
     public void sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
-        System.out.println("💕💕프로젝트 생성 이벤트 수신!");
         Long projectId = projectCreated.getProjectId();
         List<Attachment> files = attachmentRepository.findByProjectId(projectId);
         if (files.isEmpty()) {
