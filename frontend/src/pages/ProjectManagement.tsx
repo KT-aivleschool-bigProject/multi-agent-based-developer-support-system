@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Plus, FolderPlus, Users, Calendar, Target, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { projectManagementAPI } from '@/services/api';
 
 const ProjectManagement = () => {
   const { toast } = useToast();
@@ -17,6 +18,14 @@ const ProjectManagement = () => {
     setIsProjectDetailOpen(true);
   };
 
+  const handleCreateProject = async () => {
+    try {
+      await projectManagementAPI.initProject();
+      navigate('/projects/create');
+    } catch (error) {
+      toast({ title: '프로젝트 생성 실패', description: '다시 시도해주세요.', variant: 'destructive' });
+    }
+  };
   // 샘플 데이터
   const mockProjects = [
     {
@@ -64,7 +73,7 @@ const ProjectManagement = () => {
           <CardContent>
             <Button 
               className="w-full"
-              onClick={() => navigate('/projects/create')}
+              onClick={handleCreateProject}
             >
               <Plus className="h-4 w-4 mr-2" />
               프로젝트 생성
