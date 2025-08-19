@@ -250,16 +250,49 @@ export const attachmentAPI = {
   },
 };
 
-  // 프로젝트 관리 관련 API
-  export const projectManagementAPI = {
-    // 프로젝트 초기화 (빈 프로젝트 생성)
-    initProject: async () => {
-      const response = await api.post('/projectManagements/init');
-      return response.data;
-    },
+// Agent 관련 API
+export const agentAPI = {
+  // 일반 채팅 (ManagerAgent → 적절한 에이전트 선택)
+  chat: async (message: string) => {
+    const response = await api.post('/ai/process', { message });
+    return response.data;
+  },
 
-  // 프로젝트 생성 (상세 정보 입력)
-  createProject: async (data: {
+  // 특정 에이전트 직접 호출
+  callAgent: async (agentType: string, message: string) => {
+    const response = await api.post(`/ai/agents/${agentType}`, { message });
+    return response.data;
+  },
+
+  // RAG 문서 추가
+  addDocuments: async (filePaths: string[]) => {
+    const response = await api.post('/ai/rag/add-documents', filePaths);
+    return response.data;
+  },
+};
+
+// 프로젝트 관리 관련 API
+export const projectManagementAPI = {
+  // 프로젝트 초기화 (빈 프로젝트 생성)
+  initProject: async () => {
+    const response = await api.post('/projectManagements/init');
+    return response.data;
+  },
+
+  // 특정 프로젝트 조회
+  getProject: async (projectId: number) => {
+    const response = await api.get(`/projectManagements/${projectId}`);
+    return response.data;
+  },
+
+  // 모든 프로젝트 목록 조회
+  getAllProjects: async () => {
+    const response = await api.get('/projectManagements');
+    return response.data;
+  },
+
+  // 프로젝트 상세 정보 업데이트
+  updateProject: async (data: {
     projectId: number;
     projectName: string;
     projectDescription: string;
@@ -268,7 +301,6 @@ export const attachmentAPI = {
     inviteEmails?: string[];
   }) => {
     const formData = new FormData();
-    formData.append('projectId', data.projectId.toString());
     formData.append('projectName', data.projectName);
     formData.append('projectDescription', data.projectDescription);
     
