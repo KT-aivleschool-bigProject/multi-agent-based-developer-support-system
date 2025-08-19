@@ -235,4 +235,25 @@ export const attachmentAPI = {
   },
 };
 
+// Agent 관련 API
+export const agentAPI = {
+  // 일반 채팅 (ManagerAgent → 적절한 에이전트 선택)
+  chat: async (message: string) => {
+    const response = await api.post('/ai/process', { message });
+    return response.data;
+  },
+
+  // 특정 에이전트 직접 호출
+  callAgent: async (agentType: string, message: string) => {
+    const response = await api.post(`/ai/agents/${agentType}`, { message });
+    return response.data;
+  },
+
+  // RAG 문서 추가
+  addDocuments: async (filePaths: string[]) => {
+    const response = await api.post('/ai/rag/add-documents', filePaths);
+    return response.data;
+  },
+};
+
 export default api; 

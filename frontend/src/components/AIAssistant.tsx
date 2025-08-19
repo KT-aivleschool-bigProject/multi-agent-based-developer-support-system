@@ -10,210 +10,236 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, User, Upload, FileText } from 'lucide-react';
+import { Bot, Send, Upload, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import api from '@/services/api';
+
+type Sender = 'user' | 'bot';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
-  sender: 'user' | 'ai';
+  sender: Sender;
   timestamp: Date;
+  agents_used?: string[]; // center_agent 응답의 agents_use/agents_used 를 표시
+  processing_time?: number;
 }
 
-const AIAssistant = () => {
-  const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
+// 게이트웨이 경로 기준(예시): /ai/** → FASTAPI
+const ENDPOINT = 'https://cautious-succotash-v57pwv5v676hw4rx-8003.app.github.dev/ai/process'; // center_agent의 /ai/process
+
+const AIAssistant: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
-      text: user?.role === 'team_leader' 
-        ? "안녕하세요! AI 어시스턴트입니다. 개발 관련 질문이나 업무에 대해 도움이 필요하시면 언제든 말씀해주세요. 팀장님은 프로젝트 계획서를 업로드하여 프로젝트와 팀을 자동 생성할 수 있습니다."
-        : "안녕하세요! AI 어시스턴트입니다. 개발 관련 질문이나 업무에 대해 도움이 필요하시면 언제든 말씀해주세요.",
-      sender: 'ai',
+      id: 'welcome',
+      text: '안녕하세요! 팀 에이전트 시스템입니다. 무엇을 도와드릴까요?\n\n다음과 같은 요청을 해보세요:\n• "코드 리뷰를 해줘" (코드 에이전트)\n• "문서를 작성해줘" (문서 에이전트)\n• "일정을 관리해줘" (일정 에이전트)',
+      sender: 'bot',
       timestamp: new Date(),
     },
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // 스크롤을 항상 최신 메시지로 이동
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, open]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-      toast({
-        title: "파일 업로드 완료",
-        description: `${file.name}이 업로드되었습니다.`,
-      });
-    }
-  };
-
-  const handleSendMessage = () => {
-    if (!inputValue.trim() && !uploadedFile) return;
-
-    let messageText = inputValue;
-    
-    if (uploadedFile && user?.role === 'team_leader') {
-      messageText += uploadedFile ? ` [첨부파일: ${uploadedFile.name}]` : '';
-    }
-
-    const userMessage: Message = {
-      id: Date.now(),
-      text: messageText,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-
-    // AI 응답 시뮬레이션
-    setTimeout(() => {
-      let aiResponseText = "죄송합니다. 현재 AI 기능은 개발 중입니다. 곧 더 나은 서비스로 찾아뵙겠습니다!";
-      
-      if (uploadedFile && user?.role === 'team_leader') {
-        aiResponseText = `프로젝트 계획서 "${uploadedFile.name}"을 분석했습니다. 다음과 같이 프로젝트와 팀을 생성하겠습니다:
-
-📋 **프로젝트 정보**
-- 프로젝트명: 새로운 웹 애플리케이션
-- 예상 기간: 5주
-- 필요 인력: 프론트엔드 개발자 2명, 백엔드 개발자 2명, 디자이너 1명
-
-👥 **팀 구성 제안**
-- 팀장: ${user.username} (현재 사용자)
-- 필요 역할: Frontend Developer, Backend Developer, UI/UX Designer
-
-🚀 **다음 단계**
-1. 팀 멤버 초대
-2. 개발 환경 설정
-3. 프로젝트 일정 계획
-
-프로젝트를 생성하시겠습니까?`;
-        setUploadedFile(null);
-      }
-      
-      const aiResponse: Message = {
-        id: Date.now() + 1,
-        text: aiResponseText,
-        sender: 'ai',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  // Enter 키로 전송
+  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
+  const handleSendMessage = async () => {
+    const value = input.trim();
+    if (!value || sending) return;
+
+    // 인증 체크 (디자인은 그대로, 사용은 로그인 사용자만)
+    // if (!isAuthenticated) {
+    //   toast({
+    //     title: '로그인이 필요합니다',
+    //     description: 'AI 어시스턴트를 사용하려면 먼저 로그인하세요.',
+    //     variant: 'destructive',
+    //   });
+    //   return;
+    // }
+
+    // 1) 사용자 메시지를 먼저 UI에 추가
+    const userMsg: Message = {
+      id: `${Date.now()}-user`,
+      text: value,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput('');
+    setSending(true);
+
+    try {
+      // 2) center_agent 로직 그대로: { message } 전송
+      //    center_agent Chatbot.tsx 기준 응답 필드: response, agents_use
+      const res = await api.post(ENDPOINT, { message: value });
+
+      // 안전하게 필드 파싱(agents_use / agents_used 호환)
+      const data = res.data || {};
+      const botText: string = data.response ?? '(응답이 없습니다)';
+      const agents: string[] = Array.isArray(data.agents_used) ? data.agents_used : undefined;
+      const processingTime: number = typeof data.processing_time === 'number' ? data.processing_time : undefined;
+
+      const botMsg: Message = {
+        id: `${Date.now()}-bot`,
+        text: botText,
+        sender: 'bot',
+        timestamp: new Date(),
+        agents_used: agents,
+        processing_time: processingTime,
+      };
+
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err: any) {
+      console.error(err);
+      
+      // 한 번만 뽑아서 둘 다 사용
+      const cause =
+        err?.response?.data?.message ??
+        (Array.isArray(err?.response?.data?.detail)
+          ? err.response.data.detail.map((d: any) => d?.msg ?? d).join(', ')
+          : (typeof err?.response?.data?.detail === 'string'
+              ? err.response.data.detail
+              : (err?.message || '원인을 알 수 없습니다.')));
+
+      const errorText = `서버와 통신이 실패했습니다: ${cause}\n잠시 후 다시 시도해 주세요.`;
+
+      // 토스트 알림
+      toast({
+        title: '요청 실패',
+        description: errorText,
+        variant: 'destructive',
+      });
+
+      // 오류도 메시지로 표시
+      setMessages((prev) => [
+        ...prev,
+        {
+            id: `${Date.now()}-bot-error`,
+            text: errorText, // ← 토스트와 동일 문구
+            sender: 'bot',
+            timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  
+  const formatMessage = (message: Message) => {
+    let formattedText = message.text;
+    
+    if (message.agents_used && message.agents_used.length > 0) {
+      formattedText += `\n\n🤖 사용된 에이전트: ${message.agents_used.join(', ')}`;
+    }
+    
+    if (message.processing_time) {
+      formattedText += `\n⏱️ 처리 시간: ${message.processing_time}초`;
+    }
+    
+    return formattedText;
+  };
+
+  const Bubble: React.FC<{ msg: Message }> = ({ msg }) => {
+    const isUser = msg.sender === 'user';
+    return (
+      <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
+        <div
+          className={`max-w-[80%] rounded-2xl px-4 py-2 shadow-sm
+            ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}
+        >
+          {/* 본문 + 사용된 에이전트/처리시간을 한 덩어리로 출력 */}
+          <div className="text-sm whitespace-pre-wrap break-words">
+            {formatMessage(msg)}
+          </div>
+
+          {/* 메타 영역: 타임스탬프만 유지 (배지는 제거) */}
+          <div className="mt-1 flex items-center">
+            <span className="ml-auto text-xs opacity-60">
+              {msg.timestamp.toLocaleTimeString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+    <Sheet open={open} onOpenChange={setOpen}>
+      {/* 우하단 플로팅 버튼(디자인 유지) */}
       <SheetTrigger asChild>
         <Button
-          variant="outline"
-          size="sm"
-          className="fixed bottom-6 right-6 z-50 shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 rounded-full w-14 h-14 p-0"
+          className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
+          size="icon"
         >
           <Bot className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[500px] h-full flex flex-col">
+
+      {/* 사이드 패널 */}
+      <SheetContent side="right" className="w-[380px] sm:w-[420px] h-full flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            AI 어시스턴트
+            <Bot className="h-5 w-5" /> AI 어시스턴트
           </SheetTitle>
           <SheetDescription>
             개발 관련 질문이나 업무에 대해 도움을 받아보세요.
           </SheetDescription>
         </SheetHeader>
-        
-        <div className="flex-1 flex flex-col gap-4 min-h-0">
-          <ScrollArea className="flex-1 pr-4 max-h-[calc(100vh-300px)]">
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.sender === 'ai' && (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <Bot className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    <p className="text-sm">{message.text}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                  {message.sender === 'user' && (
-                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4" />
-                    </div>
-                  )}
-                </div>
+
+        {/* 메시지 영역 */}
+        <div className="flex-1 flex flex-col min-h-0 mt-2">
+          <ScrollArea className="flex-1 rounded-md border p-3">
+            <div className="flex flex-col">
+              {messages.map((m) => (
+                <Bubble key={m.id} msg={m} />
               ))}
-              <div ref={messagesEndRef} />
+              <div ref={endRef} />
+              {sending && (
+                <div className="text-xs opacity-70 mt-2">응답 생성 중…</div>
+              )}
             </div>
           </ScrollArea>
-          
-          <div className="space-y-2 pt-4">
-            {user?.role === 'team_leader' && (
-              <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">팀장 전용: 프로젝트 계획서 업로드</span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="file-upload"
+
+          {/* 입력 영역 */}
+          <div className="mt-3">
+            {!isAuthenticated ? (
+              <div className="text-sm text-muted-foreground">
+                AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="질문을 입력하세요 (Enter 전송)"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={sending}
+                  className="flex-1"
                 />
-                <label htmlFor="file-upload">
-                  <Button variant="ghost" size="sm" asChild>
-                    <span className="cursor-pointer">
-                      <Upload className="h-3 w-3" />
-                    </span>
-                  </Button>
-                </label>
-                {uploadedFile && (
-                  <span className="text-xs text-primary">{uploadedFile.name}</span>
-                )}
+                <Button onClick={handleSendMessage} size="sm" disabled={sending || !input.trim()}>
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             )}
-            
-            <div className="flex gap-2">
-              <Input
-                placeholder="메시지를 입력하세요..."
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage} size="sm">
-                <Send className="h-4 w-4" />
-              </Button>
+            {/* 파일 업로드/문서 RAG 연동은 추후 확장 (Upload, FileText 아이콘 보존) */}
+            <div className="mt-2 flex gap-2 text-xs text-muted-foreground">
+              <Upload className="h-4 w-4" /> <FileText className="h-4 w-4" />
+              <span>문서 업로드(RAG)는 추후 지원 예정</span>
             </div>
           </div>
         </div>
