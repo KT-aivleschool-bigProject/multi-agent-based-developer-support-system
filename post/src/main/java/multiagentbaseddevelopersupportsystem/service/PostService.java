@@ -27,15 +27,13 @@ import multiagentbaseddevelopersupportsystem.external.UserClient;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final UserClient userClient;
 
-    public Long startPostWriting(Long userId, Long projectId) {
+    public Long startPostWriting(Long userId) {
         Post post = Post.builder()
             .title("")
             .content("")
             .viewCount(0)
             .userId(userId)
-            .projectId(projectId)
             .status(PostStatus.DRAFT)
             .build();
 
@@ -94,16 +92,16 @@ public class PostService {
         return postRepository.save(post).toDto();
 	}
 
-	public Page<PostResponseDto> getPostList(Long projectId, Pageable pageable) {
-		Page<Post> postPage = postRepository.findByProjectId(projectId, pageable);
+	public Page<PostResponseDto> getPostList(Pageable pageable) {
+		Page<Post> postPage = postRepository.findAll(pageable);
 		return postPage.map(Post::toDto);
 	}
 
-    public Page<PostResponseDto> getPostListByKeyword(Long projectId, String searchKeyword, Pageable pageable) {
+    public Page<PostResponseDto> getPostListByKeyword(String searchKeyword, Pageable pageable) {
         if (searchKeyword == null || searchKeyword.isEmpty()) {
-            return postRepository.findByProjectId(projectId, pageable).map(Post::toDto);
+            return postRepository.findAll(pageable).map(Post::toDto);
         }
-        return postRepository.findByProjectIdAndTitleContaining(projectId, searchKeyword, pageable).map(Post::toDto);
+        return postRepository.findByTitleContaining(searchKeyword, pageable).map(Post::toDto);
     }
 
     public void createPostIncludingProjectAttachment(ProjectAttachmentAutoCreated event) {
@@ -112,7 +110,6 @@ public class PostService {
             .content(event.getContent())
             .viewCount(0)
             .userId(null)
-            .projectId(event.getProjectId())
             .status(PostStatus.PUBLISHED)
             .createdAt(new Date())
             .build();
