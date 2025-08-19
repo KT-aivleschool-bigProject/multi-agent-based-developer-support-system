@@ -1,29 +1,5 @@
 package multiagentbaseddevelopersupportsystem.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobHttpHeaders;
@@ -32,12 +8,36 @@ import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.AttachmentRepository;
 import multiagentbaseddevelopersupportsystem.domain.PostCreatedByAttachmentAgent;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentAutoCreated;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
 import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
@@ -105,11 +105,6 @@ public class AttachmentService {
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("허용되지 않은 파일 확장자입니다: " + extension);
         }
-
-        // 파일 크기 검증 (10MB)
-        if (file.getSize() > 10 * 1024 * 1024) {
-            throw new IllegalArgumentException("파일 크기가 10MB를 초과합니다.");
-        }
     }
 
     private String getFileExtension(String filename) {
@@ -131,7 +126,7 @@ public class AttachmentService {
             // HTTP 헤더 설정
             BlobHttpHeaders headers = new BlobHttpHeaders()
                     .setContentType(file.getContentType())
-                    .setContentDisposition("attachment; filename=\"" + file.getOriginalFilename() + "\"");
+                    .setContentDisposition("attachment; filename=\"" + URLEncoder.encode(file.getOriginalFilename(), "UTF-8") + "\"");
 
             // Azure에 파일 업로드
             blobClient.upload(new ByteArrayInputStream(file.getBytes()), file.getSize(), true);
@@ -270,7 +265,6 @@ public class AttachmentService {
     }
 
     public void sendProjectAttachmentsToDocumentAgent(ProjectCreated projectCreated) {
-        System.out.println("💕💕프로젝트 생성 이벤트 수신!");
         Long projectId = projectCreated.getProjectId();
         List<Attachment> files = attachmentRepository.findByProjectId(projectId);
         if (files.isEmpty()) {

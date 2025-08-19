@@ -57,10 +57,12 @@ public class AttachmentController {
         String contentType = attachmentService.getContentType(filename);
         String originalFilename = attachmentService.getOriginalFilename(filename);
 
+        String encodedFilename = java.net.URLEncoder.encode(originalFilename, "UTF-8").replaceAll("\\+", "%20");
+
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, 
-                       "attachment; filename=\"" + originalFilename + "\"")
+                       "attachment; filename=\"" + originalFilename + "\"; filename*=UTF-8''" + encodedFilename)
                 .body(resource);
     }
 }
