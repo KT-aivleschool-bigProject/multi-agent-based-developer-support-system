@@ -31,8 +31,8 @@ public class Post  {
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Long postId;    
-    
+    private Long postId;
+
     @Column(name="title", nullable=false, length = 200)
     private String title;    
     
@@ -54,6 +54,9 @@ public class Post  {
     
     @Column(name="user_id")
     private Long userId;
+
+    @Column(name="project_id", nullable=false)
+    private Long projectId;
 
     @Enumerated(EnumType.STRING)
     @Column(name="status", nullable=false)
