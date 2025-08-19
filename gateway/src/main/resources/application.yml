@@ -58,6 +58,10 @@ spring:
             - Path=/comments/**
           filters:
             - JwtAuth
+        - id: agent-fastapi
+          uri: http://center-agent-service:8003
+          predicates:
+            - Path=/ai/**
         - id: frontend
           uri: http://localhost:3000
           predicates:
