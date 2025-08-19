@@ -15,9 +15,24 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
+    const user = localStorage.getItem('user');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // X-User-Id 헤더 추가 (프로젝트 관리 API용)
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.userId) {
+          config.headers['X-User-Id'] = userData.userId;
+        }
+      } catch (e) {
+        console.warn('Failed to parse user data:', e);
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -231,6 +246,57 @@ export const attachmentAPI = {
   // 파일 삭제
   deleteFile: async (fileId: number) => {
     const response = await api.delete(`/attachments/${fileId}`);
+    return response.data;
+  },
+};
+
+  // 프로젝트 관리 관련 API
+  export const projectManagementAPI = {
+    // 프로젝트 초기화 (빈 프로젝트 생성)
+    initProject: async () => {
+      const response = await api.post('/projectManagements/init');
+      return response.data;
+    },
+
+  // 프로젝트 생성 (상세 정보 입력)
+  createProject: async (data: {
+    projectId: number;
+    projectName: string;
+    projectDescription: string;
+    githubUrl?: string;
+    projectStatus?: string;
+    inviteEmails?: string[];
+  }) => {
+    const formData = new FormData();
+    formData.append('projectId', data.projectId.toString());
+    formData.append('projectName', data.projectName);
+    formData.append('projectDescription', data.projectDescription);
+    
+    if (data.githubUrl) {
+      formData.append('githubUrl', data.githubUrl);
+    }
+    
+    if (data.projectStatus) {
+      formData.append('projectStatus', data.projectStatus);
+    }
+    
+    if (data.inviteEmails && data.inviteEmails.length > 0) {
+      data.inviteEmails.forEach(email => {
+        formData.append('inviteEmails', email);
+      });
+    }
+
+    const response = await api.put(`/projectManagements/${data.projectId}/saveproject`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // 팀원 초대
+  inviteTeamMembers: async (projectId: number, emails: string[]) => {
+    const response = await api.post(`/projectManagements/${projectId}/invite`, emails);
     return response.data;
   },
 };

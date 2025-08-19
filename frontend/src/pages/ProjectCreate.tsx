@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { projectManagementAPI } from '@/services/api';
 
 interface TeamMember {
   name: string;
