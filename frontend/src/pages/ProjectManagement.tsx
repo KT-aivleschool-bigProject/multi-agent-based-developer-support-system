@@ -20,8 +20,13 @@ const ProjectManagement = () => {
 
   const handleCreateProject = async () => {
     try {
-      await projectManagementAPI.initProject();
-      navigate('/projects/create');
+      const result = await projectManagementAPI.initProject();
+      const projectId = result.projectId; // 실제 응답 구조에 따라 key 확인 필요
+      if (projectId) {
+        navigate(`/projects/create/${projectId}`);
+      } else {
+        toast({ title: '프로젝트 생성 실패', description: 'projectId를 받아오지 못했습니다.', variant: 'destructive' });
+      }
     } catch (error) {
       toast({ title: '프로젝트 생성 실패', description: '다시 시도해주세요.', variant: 'destructive' });
     }

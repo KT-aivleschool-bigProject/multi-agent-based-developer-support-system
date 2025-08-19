@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { projectManagementAPI } from '@/services/api';
 
 interface TeamMember {
@@ -16,14 +16,17 @@ interface TeamMember {
   role: string;
 }
 
+
 const ProjectCreate = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { projectId } = useParams();
   const [currentStep, setCurrentStep] = useState(1); // 1: 프로젝트 생성, 2: 팀 생성
-  
+
   const [projectData, setProjectData] = useState({
     name: '',
     description: '',
+    githubUrl: '', // 추가
   });
 
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
@@ -49,10 +52,15 @@ const ProjectCreate = () => {
     '디자이너',
     'PM/PO',
     'QA',
-    'DevOps'
+    'DevOps',
+    'AI 개발자'
   ];
 
   const handleNextStep = () => {
+    setCurrentStep(2);
+  };
+
+  const handleProjectCreate = async () => {
     if (!projectData.name || !projectData.description) {
       toast({
         title: "오류",
@@ -61,27 +69,26 @@ const ProjectCreate = () => {
       });
       return;
     }
-    setCurrentStep(2);
-  };
-
-  const handleProjectCreate = () => {
-    if (!teamData.name) {
-      toast({
-        title: "오류",
-        description: "팀 이름을 입력해주세요.",
-        variant: "destructive"
-      });
+    if (!projectId) {
+      toast({ title: "오류", description: "projectId가 없습니다.", variant: "destructive" });
       return;
     }
-    
-    // TODO: Supabase에 프로젝트 및 팀 생성 로직 추가
-    toast({
-      title: "프로젝트 생성 완료",
-      description: `${projectData.name} 프로젝트와 ${teamData.name} 팀이 생성되었습니다.`
-    });
-    
-    // 프로젝트 관리 페이지로 이동
-    navigate('/projects');
+    try {
+      await projectManagementAPI.updateProject({
+        projectId: Number(projectId),
+        projectName: projectData.name,
+        projectDescription: projectData.description,
+        githubUrl: projectData.githubUrl, // 추가
+        // 필요하다면 projectStatus, inviteEmails 등 추가
+      });
+      toast({
+        title: "프로젝트 생성 완료",
+        description: `${projectData.name} 프로젝트와 ${teamData.name} 팀이 생성되었습니다.`
+      });
+      navigate('/projects');
+    } catch (error) {
+      toast({ title: "프로젝트 생성 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,20 +106,33 @@ const ProjectCreate = () => {
     setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const isValidEmail = (email: string) => {
+    // 간단한 이메일 정규식
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const addTeamMember = () => {
-    if (newMember.name && newMember.email && newMember.role && newMember.role !== '역할 선택') {
-      setTeamData({
-        ...teamData,
-        members: [...teamData.members, newMember]
-      });
-      setNewMember({ name: '', email: '', role: '' });
-    } else {
+    if (!newMember.email) {
       toast({
         title: "오류",
-        description: "팀원의 모든 정보를 입력해주세요.",
+        description: "이메일을 입력해주세요.",
         variant: "destructive"
       });
+      return;
     }
+    if (!isValidEmail(newMember.email)) {
+      toast({
+        title: "오류",
+        description: "유효한 이메일 형식이 아닙니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setTeamData({
+      ...teamData,
+      members: [...teamData.members, { name: '', email: newMember.email, role: '' }]
+    });
+    setNewMember({ name: '', email: '', role: '' });
   };
 
   const removeTeamMember = (index: number) => {
@@ -199,6 +219,17 @@ const ProjectCreate = () => {
                     </div>
 
                     <div>
+                      <Label htmlFor="project-github">GitHub 주소 (선택)</Label>
+                      <Input
+                        id="project-github"
+                        type="url"
+                        value={projectData.githubUrl || ''}
+                        onChange={(e) => setProjectData({...projectData, githubUrl: e.target.value})}
+                        placeholder="https://github.com/your-repo"
+                      />
+                    </div>
+
+                    <div>
                       <Label htmlFor="project-files">파일 첨부</Label>
                       <div className="mt-2">
                         <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
@@ -277,75 +308,27 @@ const ProjectCreate = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="team-name">팀명 *</Label>
-                      <Input
-                        id="team-name"
-                        value={teamData.name}
-                        onChange={(e) => setTeamData({...teamData, name: e.target.value})}
-                        placeholder="예: Frontend Warriors"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="team-description">팀 설명 (선택사항)</Label>
-                      <Input
-                        id="team-description"
-                        value={teamData.description}
-                        onChange={(e) => setTeamData({...teamData, description: e.target.value})}
-                        placeholder="팀의 목표나 특징을 간단히 설명하세요"
-                      />
-                    </div>
-                  </div>
-
                   <div className="space-y-3">
-                    <Label>팀원 추가</Label>
-                    <div className="grid grid-cols-12 gap-2">
-                      <div className="col-span-3">
-                        <Input
-                          placeholder="이름"
-                          value={newMember.name}
-                          onChange={(e) => setNewMember({...newMember, name: e.target.value})}
-                        />
-                      </div>
-                      <div className="col-span-5">
-                        <Input
-                          placeholder="email@example.com"
-                          type="email"
-                          value={newMember.email}
-                          onChange={(e) => setNewMember({...newMember, email: e.target.value})}
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <Select value={newMember.role} onValueChange={(value) => setNewMember({...newMember, role: value})}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="역할 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roleOptions.slice(1).map((role) => (
-                              <SelectItem key={role} value={role}>{role}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-1">
-                        <Button type="button" onClick={addTeamMember} size="sm" className="w-full">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+                    <Label>팀원 이메일 추가</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="email@example.com"
+                        type="email"
+                        value={newMember.email}
+                        onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                      />
+                      <Button type="button" onClick={addTeamMember} size="sm">
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
 
                     {teamData.members.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-sm font-medium">팀원 목록</p>
+                        <p className="text-sm font-medium">팀원 이메일 목록</p>
                         <div className="space-y-2 max-h-32 overflow-y-auto">
                           {teamData.members.map((member, index) => (
                             <div key={index} className="flex items-center justify-between bg-muted/50 p-2 rounded">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{member.name}</span>
-                                <span className="text-sm text-muted-foreground">{member.email}</span>
-                                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{member.role}</span>
-                              </div>
+                              <span className="text-sm text-muted-foreground">{member.email}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
