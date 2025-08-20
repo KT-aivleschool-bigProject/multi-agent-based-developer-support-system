@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useParams } from 'react-router-dom';
-import { projectManagementAPI } from '@/services/api';
+import { projectManagementAPI, attachmentAPI } from '@/services/api';
 
 interface TeamMember {
   name: string;
@@ -59,7 +59,11 @@ const ProjectCreate = () => {
   const handleNextStep = () => {
     setCurrentStep(2);
   };
-
+  const handleAll = async () => {
+    await handleProjectCreate();
+    await handleInviteMembers(Number(projectId), teamData.members.map(member => member.email));
+    await uploadAllFiles(attachedFiles, Number(projectId));
+  };
   const handleProjectCreate = async () => {
     if (!projectData.name || !projectData.description) {
       toast({
@@ -79,7 +83,8 @@ const ProjectCreate = () => {
         projectName: projectData.name,
         projectDescription: projectData.description,
         githubUrl: projectData.githubUrl, // 추가
-        // 필요하다면 projectStatus, inviteEmails 등 추가
+        projectStatus: "ACTIVE", // 기본값으로 ACTIVE 설정
+        inviteEmails: teamData.members.map(member => member.email) // 팀원 이메일 목록
       });
       toast({
         title: "프로젝트 생성 완료",
@@ -91,13 +96,21 @@ const ProjectCreate = () => {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length > 0) {
-      setAttachedFiles((prev) => [...prev, ...files]);
+  const uploadAllFiles = async (files: File[], projectId: number) => {
+    if (!projectId) return;
+    try {
+      for (const file of files) {
+        await attachmentAPI.uploadFileCreatingProject(file, Number(projectId));
+      }
       toast({
-        title: '파일 첨부 완료',
-        description: `${files.length}개의 파일이 첨부되었습니다.`,
+        title: '파일 첨부 및 업로드 완료',
+        description: `${files.length}개의 파일이 서버에 업로드되었습니다.`,
+      });
+    } catch (error) {
+      toast({
+        title: '파일 업로드 실패',
+        description: '파일 업로드 중 오류가 발생했습니다.',
+        variant: 'destructive',
       });
     }
   };
@@ -140,6 +153,18 @@ const ProjectCreate = () => {
       ...teamData,
       members: teamData.members.filter((_, i) => i !== index)
     });
+  };
+
+  // 예: 프로젝트 생성 후 팀원 초대
+  const handleInviteMembers = async (projectId: number, emails: string[]) => {
+    try {
+      await projectManagementAPI.inviteTeamMembers(projectId, emails);
+      // 성공 처리
+      toast({ title: "팀원 초대 완료" });
+    } catch (error) {
+      // 실패 처리
+      toast({ title: "팀원 초대 실패", description: "다시 시도해주세요.", variant: "destructive" });
+    }
   };
 
   return (
@@ -246,7 +271,16 @@ const ProjectCreate = () => {
                                 id="file-upload"
                                 type="file"
                                 multiple
-                                onChange={handleFileUpload}
+                                onChange={e => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (files.length > 0) {
+                                    setAttachedFiles(prev => [...prev, ...files]);
+                                    toast({
+                                      title: '파일 첨부 완료',
+                                      description: `${files.length}개의 파일이 첨부되었습니다.`,
+                                    });
+                                  }
+                                }}
                                 className="hidden"
                                 accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
                               />
@@ -356,7 +390,7 @@ const ProjectCreate = () => {
               {currentStep === 1 ? (
                 <Button onClick={handleNextStep}>다음</Button>
               ) : (
-                <Button onClick={handleProjectCreate}>프로젝트 생성</Button>
+                <Button onClick={handleAll}>프로젝트 생성</Button>
               )}
             </div>
           </div>
