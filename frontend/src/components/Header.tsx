@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Code2, LogOut, Settings, User, Sun, Moon } from 'lucide-react';
+import { Code2, LogOut, User, Sun, Moon } from 'lucide-react';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -39,7 +39,7 @@ const Header = () => {
 
   return (
     <div className="px-4 h-12 flex items-center justify-between w-full">
-      <Link to="/dashboard" className="flex items-center space-x-2">
+      <Link to="/" className="flex items-center space-x-2">
         <Code2 className="h-5 w-5 text-primary" />
         <span className="text-lg font-bold">DevCollab</span>
       </Link>
@@ -95,10 +95,6 @@ const Header = () => {
                   <User className="mr-2 h-4 w-4" />
                   <span>마이페이지</span>
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>설정</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
