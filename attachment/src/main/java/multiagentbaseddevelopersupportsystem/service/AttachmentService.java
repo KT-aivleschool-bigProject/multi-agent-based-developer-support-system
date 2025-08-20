@@ -340,7 +340,6 @@ public class AttachmentService {
                     } else {
                         // 문서화 에이전트로부터 최종 yaml 파일 받아옴
                     }
-                    
                 }
                 if (body.getProjectId() != null) {
                     body.publishAfterCommit();
