@@ -15,9 +15,24 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
+    const user = localStorage.getItem('user');
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // X-User-Id 헤더 추가 (프로젝트 관리 API용)
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.userId) {
+          config.headers['X-User-Id'] = userData.userId;
+        }
+      } catch (e) {
+        console.warn('Failed to parse user data:', e);
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -203,6 +218,14 @@ export const commentAPI = {
 
 // 첨부파일 관련 API
 export const attachmentAPI = {
+  // 프로젝트 생성 중 파일 업로드
+  uploadFileCreatingProject: async (file: File, projectId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('projectId', projectId.toString());
+    const response = await api.post('/attachments/uploadcreatingproject', formData);
+    return response.data;
+  },
   // 파일 업로드
   uploadFile: async (file: File, postId: number) => {
     const formData = new FormData();
@@ -259,4 +282,66 @@ export const agentAPI = {
   },
 };
 
-export default api; 
+// 프로젝트 관리 관련 API
+export const projectManagementAPI = {
+  // 프로젝트 초기화 (빈 프로젝트 생성)
+  initProject: async () => {
+    const response = await api.post('/projectManagements/init');
+    return response.data;
+  },
+
+  // 특정 프로젝트 조회
+  getProject: async (projectId: number) => {
+    const response = await api.get(`/projectManagements/${projectId}`);
+    return response.data;
+  },
+
+  // 모든 프로젝트 목록 조회
+  getAllProjects: async () => {
+    const response = await api.get('/projectManagements');
+    return response.data;
+  },
+
+  // 프로젝트 상세 정보 업데이트
+  updateProject: async (data: {
+    projectId: number;
+    projectName: string;
+    projectDescription: string;
+    githubUrl?: string;
+    projectStatus?: string;
+    inviteEmails?: string[];
+  }) => {
+    const formData = new FormData();
+    formData.append('projectName', data.projectName);
+    formData.append('projectDescription', data.projectDescription);
+    
+    if (data.githubUrl) {
+      formData.append('githubUrl', data.githubUrl);
+    }
+    
+    if (data.projectStatus) {
+      formData.append('projectStatus', data.projectStatus);
+    }
+    
+    if (data.inviteEmails && data.inviteEmails.length > 0) {
+      data.inviteEmails.forEach(email => {
+        formData.append('inviteEmails', email);
+      });
+    }
+
+    const response = await api.put(`/projectManagements/${data.projectId}/saveproject`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // 팀원 초대
+  inviteTeamMembers: async (projectId: number, emails: string[]) => {
+    const response = await api.post(`/projectManagements/${projectId}/invite`, emails);
+    return response.data;
+  },
+};
+
+export default api;

@@ -55,9 +55,6 @@ public class Post  {
     @Column(name="user_id")
     private Long userId;
 
-    @Column(name="project_id", nullable=false)
-    private Long projectId;
-
     @Enumerated(EnumType.STRING)
     @Column(name="status", nullable=false)
     private PostStatus status;

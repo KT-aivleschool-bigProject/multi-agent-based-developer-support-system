@@ -20,7 +20,7 @@ spring:
           uri: http://localhost:8083
           predicates:
             - Path=, 
-        - id: task
+        - id: invitemanagement
           uri: http://localhost:8084
           predicates:
             - Path=/taskAssignments/**, 
