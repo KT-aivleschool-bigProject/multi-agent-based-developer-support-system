@@ -21,10 +21,14 @@ import java.util.List;
 import java.util.UUID;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.AttachmentRepository;
+import multiagentbaseddevelopersupportsystem.domain.DocAgentResponse;
 import multiagentbaseddevelopersupportsystem.domain.PostCreatedByAttachmentAgent;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentAutoCreated;
 import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
 import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPost;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPostRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -46,6 +50,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class AttachmentService {
 
     private final AttachmentRepository attachmentRepository;
+    private final SwaggerYamlPostRepository swaggerYamlPostRepository;
     
     @Autowired(required = false)
     private BlobContainerClient blobContainerClient;
@@ -275,58 +280,80 @@ public class AttachmentService {
         List<ProjectAttachmentRequest> result = new ArrayList<>();
         if ("azure".equals(storageType) && blobContainerClient != null) {
             for (Attachment file : files) {
-                ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
-                fileInfo.setProjectId(String.valueOf(projectId));
-                fileInfo.setFileId(String.valueOf(file.getFileId()));
-
-                // SAS URL 생성
-                BlobClient blobClient = blobContainerClient.getBlobClient(file.getStoredName());
-                BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
-                OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(1); // 1시간 유효
-                BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime, permission);
-
-                String sasUrl = blobClient.getBlobUrl() + "?" + blobClient.generateSas(values);
-                fileInfo.setSasUrl(sasUrl);
-
+                ProjectAttachmentRequest fileInfo = createProjectAttachmentRequest(projectId, file);
                 result.add(fileInfo);
             }
         } 
 
         for(ProjectAttachmentRequest fileInfo : result) {
-                // === FastAPI 서버로 REST POST 요청 ===
-            String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
-            RestTemplate restTemplate = new RestTemplate();
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            HttpEntity<ProjectAttachmentRequest> requestEntity = new HttpEntity<>(fileInfo, headers);
-            log.info("FastAPI 요청 requestEntity: {}", requestEntity);
-
-            try {
-                ResponseEntity<ProjectAttachmentAutoCreated> response = restTemplate.exchange(
-                    fastApiUrl,
-                    org.springframework.http.HttpMethod.POST,
-                    requestEntity,
-                    new ParameterizedTypeReference<ProjectAttachmentAutoCreated>() {}
-                );
-                if (response.getStatusCode().is2xxSuccessful()) {
-                } else {
-                    log.error("FastAPI 응답 코드: {}", response.getStatusCode());
-                }
-                ProjectAttachmentAutoCreated body = response.getBody();
-                if (body != null) {
-                    log.info("FastAPI 응답: {}", body);
-                    body.publishAfterCommit();
-                } else {
-                    log.warn("FastAPI 응답이 비어있습니다.");
-                }
-            } catch (Exception e) {
-                log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
-            }
+             analyzeAttachmentAndSaveSwagger(fileInfo);
         }
 
         return;
+    }
+
+    private ProjectAttachmentRequest createProjectAttachmentRequest(Long projectId, Attachment file) {
+        ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
+        fileInfo.setProjectId(String.valueOf(projectId));
+        fileInfo.setFileId(String.valueOf(file.getFileId()));
+
+        // SAS URL 생성
+        BlobClient blobClient = blobContainerClient.getBlobClient(file.getStoredName());
+        BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
+        OffsetDateTime expiryTime = OffsetDateTime.now().plusHours(1); // 1시간 유효
+        BlobServiceSasSignatureValues values = new BlobServiceSasSignatureValues(expiryTime, permission);
+
+        String sasUrl = blobClient.getBlobUrl() + "?" + blobClient.generateSas(values);
+        fileInfo.setSasUrl(sasUrl);
+
+        return fileInfo;
+    }
+
+    private DocAgentResponse analyzeAttachmentAndSaveSwagger(ProjectAttachmentRequest fileInfo) {
+        String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<ProjectAttachmentRequest> requestEntity = new HttpEntity<>(fileInfo, headers);
+        log.info("FastAPI 요청 requestEntity: {}", requestEntity);
+
+        try {
+            ResponseEntity<ProjectAttachmentAutoCreated> response = restTemplate.exchange(
+                fastApiUrl,
+                org.springframework.http.HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<ProjectAttachmentAutoCreated>() {}
+            );
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("FastAPI 응답 코드: {}", response.getStatusCode());
+            }
+            ProjectAttachmentAutoCreated body = response.getBody();
+            if (body != null) {
+                log.info("FastAPI 응답: {}", body);
+                if (body.isHasApiSpec()){
+                    SwaggerYamlPost swaggerYamlPost = swaggerYamlPostRepository.findById(Long.valueOf(1)).orElseThrow(() -> new RuntimeException("SwaggerYamlPost not found"));
+                    // diff 계산해서 보내기
+                    swaggerYamlPost.setYamlContent(body.getYaml());
+                    swaggerYamlPostRepository.save(swaggerYamlPost);
+                }
+                if (body.getProjectId() != null) {
+                    body.publishAfterCommit();
+                } else {
+                    DocAgentResponse docAgentResponse = DocAgentResponse.builder()
+                        .title(body.getTitle())
+                        .content(body.getContent())
+                        .build();
+                    return docAgentResponse;
+                }
+            } else {
+                log.warn("FastAPI 응답이 비어있습니다.");
+            }
+        } catch (Exception e) {
+            log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
+        }
+        return null;
     }
 
     public void updatePostIdInFile(PostCreatedByAttachmentAgent postCreatedByAttachmentAgent) {
@@ -337,5 +364,17 @@ public class AttachmentService {
             .orElseThrow(() -> new RuntimeException("No Entity Found"));
         attachment.setPostId(postId);
         attachmentRepository.save(attachment);
+    }
+
+    public DocAgentResponse getAutoCreatedPost(Long fileId) {
+        Attachment file = attachmentRepository.findById(fileId)
+            .orElseThrow(() -> new RuntimeException("No Entity Found"));
+        Long postId = file.getPostId();
+        ProjectAttachmentRequest fileInfo = null;
+        if ("azure".equals(storageType) && blobContainerClient != null) {
+            fileInfo = createProjectAttachmentRequest(null, file);
+        } 
+        DocAgentResponse docAgentResponse = analyzeAttachmentAndSaveSwagger(fileInfo);
+        return docAgentResponse;
     }
 }

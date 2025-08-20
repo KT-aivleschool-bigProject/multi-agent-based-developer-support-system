@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
+import multiagentbaseddevelopersupportsystem.domain.DocAgentResponse;
 import multiagentbaseddevelopersupportsystem.service.AttachmentService;
 
 @RestController
@@ -64,6 +65,15 @@ public class AttachmentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, 
                        "attachment; filename=\"" + originalFilename + "\"; filename*=UTF-8''" + encodedFilename)
                 .body(resource);
+    }
+
+    @GetMapping("/docagent/{fileId}")
+    public ResponseEntity<DocAgentResponse> getAutoCreatedPost(@PathVariable Long fileId) {
+        DocAgentResponse response = attachmentService.getAutoCreatedPost(fileId);
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(response);
     }
 }
 

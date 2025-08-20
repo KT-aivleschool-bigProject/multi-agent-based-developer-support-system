@@ -10,6 +10,7 @@ public class CreateProjectCommand {
 
     private String projectName;
     private String projectDescription;
+    private String githubUrl; // GitHub 저장소 URL
     private List<String> attachments; // 파일 URL 목록
     private List<MultipartFile> files; // 실제 파일 데이터
     private ProjectStatus projectStatus;

@@ -21,6 +21,8 @@ public class ProjectManagement {
 
     private String projectDescription;
 
+    private String githubUrl; // GitHub 저장소 URL
+
     private ProjectStatus projectStatus;
 
 
@@ -37,6 +39,7 @@ public class ProjectManagement {
         // 프로젝트 정보 설정
         this.projectName = createProjectCommand.getProjectName();
         this.projectDescription = createProjectCommand.getProjectDescription();
+        this.githubUrl = createProjectCommand.getGithubUrl();
         this.projectStatus = createProjectCommand.getProjectStatus();
 
         // 프로젝트 생성 이벤트 발행
