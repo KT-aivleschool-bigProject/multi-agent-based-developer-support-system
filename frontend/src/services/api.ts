@@ -215,6 +215,19 @@ export const commentAPI = {
 
 // 첨부파일 관련 API
 export const attachmentAPI = {
+  // 프로젝트 생성 중 파일 업로드
+  uploadFileCreatingProject: async (file: File, projectId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('projectId', projectId.toString());
+    const response = await api.post('/attachments/uploadcreatingproject', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      params: { projectId },
+    });
+    return response.data;
+  },
   // 파일 업로드
   uploadFile: async (file: File, postId: number) => {
     const formData = new FormData();
