@@ -27,7 +27,7 @@ interface Message {
 }
 
 // 게이트웨이 경로 기준(예시): /ai/** → FASTAPI
-const ENDPOINT = 'https://cautious-succotash-v57pwv5v676hw4rx-8003.app.github.dev/ai/process'; // center_agent의 /ai/process
+const ENDPOINT = 'https://fictional-space-bassoon-g4x5wgrv4rx4hjq7-8005.app.github.dev/ai/process'; // center_agent의 /ai/process
 
 const AIAssistant: React.FC = () => {
   const { isAuthenticated } = useAuth();

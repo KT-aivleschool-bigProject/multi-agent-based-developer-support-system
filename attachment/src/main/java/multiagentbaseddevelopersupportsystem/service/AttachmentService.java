@@ -36,6 +36,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,6 +57,12 @@ public class AttachmentService {
 
     @Value("${file.storage.local-path:./uploads/}")
     private String localPath;
+
+    @Value("${file.storage.project-docs-path:/workspaces/center_agent/ai-server/data/docs}")
+    private String projectDocsPath;
+
+    @Value("${center-agent.api.url:http://localhost:8000/analyze}")
+    private String centerAgentApiUrl;
 
     private static final List<String> ALLOWED_EXTENSIONS = List.of(
         "jpg", "jpeg", "png", "gif", "bmp", "webp",
@@ -89,6 +97,66 @@ public class AttachmentService {
 
         log.info("파일 업로드 완료: {} -> {}", originalFilename, storedFilename);
         return attachmentRepository.save(attachment);
+    }
+
+    // 프로젝트 생성용 파일 업로드 (center_agent 서버로 전송)
+    public Attachment uploadFileForProject(MultipartFile file, Long projectId) throws IOException {
+        validateFile(file);
+        
+        String originalFilename = file.getOriginalFilename();
+        String extension = getFileExtension(originalFilename);
+        String storedFilename = generateStoredFilename(extension);
+        
+        // center_agent 서버로 파일 전송
+        String remoteFilePath = uploadToCenterAgent(file, storedFilename);
+
+        // DB에 메타데이터 저장
+        Attachment attachment = Attachment.builder()
+                .postId(null) // 프로젝트 생성 시에는 postId 없음
+                .projectId(projectId)
+                .originalName(originalFilename)
+                .storedName(storedFilename)
+                .fileUrl(remoteFilePath) // center_agent에서의 파일 경로
+                .fileSize(file.getSize())
+                .fileType(file.getContentType())
+                .build();
+
+        log.info("프로젝트용 파일을 center_agent로 전송 완료: {} -> {}", originalFilename, storedFilename);
+        return attachmentRepository.save(attachment);
+    }
+
+    private String uploadToCenterAgent(MultipartFile file, String storedFilename) throws IOException {
+        try {
+            // center_agent 서버의 파일 업로드 API 호출
+            RestTemplate restTemplate = new RestTemplate();
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+            
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return storedFilename;
+                }
+            });
+            
+            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+            
+            String uploadUrl = centerAgentApiUrl.replace("/analyze", "/upload"); // /upload 엔드포인트 사용
+            ResponseEntity<String> response = restTemplate.postForEntity(uploadUrl, requestEntity, String.class);
+            
+            if (response.getStatusCode().is2xxSuccessful()) {
+                log.info("center_agent로 파일 업로드 성공: {}", storedFilename);
+                return "/center-agent-docs/" + storedFilename; // 가상 경로
+            } else {
+                throw new RuntimeException("center_agent 파일 업로드 실패: " + response.getStatusCode());
+            }
+            
+        } catch (Exception e) {
+            log.error("center_agent 파일 업로드 실패: {}", e.getMessage(), e);
+            throw new RuntimeException("center_agent로 파일 전송 실패: " + e.getMessage());
+        }
     }
 
     private void validateFile(MultipartFile file) {
@@ -273,7 +341,9 @@ public class AttachmentService {
         }
 
         List<ProjectAttachmentRequest> result = new ArrayList<>();
+        
         if ("azure".equals(storageType) && blobContainerClient != null) {
+            // Azure 저장소 처리
             for (Attachment file : files) {
                 ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
                 fileInfo.setProjectId(String.valueOf(projectId));
@@ -290,11 +360,33 @@ public class AttachmentService {
 
                 result.add(fileInfo);
             }
-        } 
+        } else {
+            // Local 저장소 처리
+            for (Attachment file : files) {
+                ProjectAttachmentRequest fileInfo = new ProjectAttachmentRequest();
+                fileInfo.setProjectId(String.valueOf(projectId));
+                fileInfo.setFileId(String.valueOf(file.getFileId()));
+                
+                // 파일 경로 설정
+                String filePath;
+                if (file.getFileUrl().startsWith("/center-agent-docs/")) {
+                    // center_agent 서버에 업로드된 파일인 경우
+                    filePath = "ai-server/data/docs/" + file.getStoredName();
+                } else if (file.getFileUrl().startsWith("/project-docs/")) {
+                    // 기존 프로젝트 문서 경로 (로컬)
+                    filePath = projectDocsPath + "/" + file.getStoredName();
+                } else {
+                    // 기존 파일인 경우 기존 경로 사용
+                    filePath = localPath + "/" + file.getStoredName();
+                }
+                fileInfo.setSasUrl(filePath);
+
+                result.add(fileInfo);
+            }
+        }
 
         for(ProjectAttachmentRequest fileInfo : result) {
-                // === FastAPI 서버로 REST POST 요청 ===
-            String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+            // === FastAPI 서버로 REST POST 요청 ===
             RestTemplate restTemplate = new RestTemplate();
 
             HttpHeaders headers = new HttpHeaders();
@@ -305,7 +397,7 @@ public class AttachmentService {
 
             try {
                 ResponseEntity<ProjectAttachmentAutoCreated> response = restTemplate.exchange(
-                    fastApiUrl,
+                    centerAgentApiUrl,
                     org.springframework.http.HttpMethod.POST,
                     requestEntity,
                     new ParameterizedTypeReference<ProjectAttachmentAutoCreated>() {}

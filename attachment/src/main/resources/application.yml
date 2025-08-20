@@ -7,6 +7,11 @@ spring:
       max-request-size: 50MB
       enabled: true
 
+# Center Agent API 설정
+center-agent:
+  api:
+    url: https://fictional-space-bassoon-g4x5wgrv4rx4hjq7-8005.app.github.dev/analyze  # center_agent 서버 주소 (실제 주소로 변경 필요)
+
 logging:
   level:
     org.hibernate.type: trace

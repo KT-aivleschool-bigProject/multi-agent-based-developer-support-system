@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { attachmentAPI, projectAPI } from '@/services/api';
 import { useNavigate } from 'react-router-dom';
 
 interface TeamMember {
@@ -63,7 +64,7 @@ const ProjectCreate = () => {
     setCurrentStep(2);
   };
 
-  const handleProjectCreate = () => {
+  const handleProjectCreate = async () => {
     if (!teamData.name) {
       toast({
         title: "오류",
@@ -73,14 +74,47 @@ const ProjectCreate = () => {
       return;
     }
     
-    // TODO: Supabase에 프로젝트 및 팀 생성 로직 추가
-    toast({
-      title: "프로젝트 생성 완료",
-      description: `${projectData.name} 프로젝트와 ${teamData.name} 팀이 생성되었습니다.`
-    });
-    
-    // 프로젝트 관리 페이지로 이동
-    navigate('/projects');
+    try {
+      // 1. 프로젝트 생성
+      const projectResponse = await projectAPI.createProject({
+        projectName: projectData.name,
+        projectDescription: projectData.description,
+        projectStatus: 'ACTIVE',
+        inviteEmails: teamData.members.map(member => member.email)
+      });
+      
+      const projectId = projectResponse.projectId;
+      
+      // 2. 파일 첨부가 있을 경우 업로드
+      if (attachedFiles.length > 0) {
+        const uploadPromises = attachedFiles.map(file => 
+          attachmentAPI.uploadFileForProject(file, projectId)
+        );
+        
+        await Promise.all(uploadPromises);
+        
+        toast({
+          title: "파일 업로드 완료",
+          description: `${attachedFiles.length}개의 파일이 center_agent에 저장되었습니다.`,
+        });
+      }
+      
+      toast({
+        title: "프로젝트 생성 완료",
+        description: `${projectData.name} 프로젝트와 ${teamData.name} 팀이 생성되었습니다.`
+      });
+      
+      // 프로젝트 관리 페이지로 이동
+      navigate('/projects');
+      
+    } catch (error) {
+      console.error('프로젝트 생성 실패:', error);
+      toast({
+        title: "오류",
+        description: "프로젝트 생성 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {

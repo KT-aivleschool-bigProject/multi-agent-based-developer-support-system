@@ -214,6 +214,20 @@ export const attachmentAPI = {
     return response.data;
   },
 
+  // 프로젝트 생성용 파일 업로드
+  uploadFileForProject: async (file: File, projectId: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('projectId', projectId.toString());
+    
+    const response = await api.post('/attachments/uploadcreatingproject', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // 게시글별 첨부파일 목록 조회
   getFilesByPostId: async (postId: number) => {
     const response = await api.get(`/attachments/post/${postId}`);
@@ -252,6 +266,20 @@ export const agentAPI = {
   // RAG 문서 추가
   addDocuments: async (filePaths: string[]) => {
     const response = await api.post('/ai/rag/add-documents', filePaths);
+    return response.data;
+  },
+};
+
+// 프로젝트 관리 관련 API
+export const projectAPI = {
+  // 프로젝트 생성
+  createProject: async (data: {
+    projectName: string;
+    projectDescription: string;
+    projectStatus?: string;
+    inviteEmails?: string[];
+  }) => {
+    const response = await api.post('/projects', data);
     return response.data;
   },
 };

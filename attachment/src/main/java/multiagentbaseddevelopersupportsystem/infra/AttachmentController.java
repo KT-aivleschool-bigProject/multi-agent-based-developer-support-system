@@ -35,7 +35,7 @@ public class AttachmentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "projectId") Long projectId) throws IOException {
 
-        Attachment attachment = attachmentService.uploadFile(file, null, projectId);
+        Attachment attachment = attachmentService.uploadFileForProject(file, projectId);
         return ResponseEntity.ok(attachment);
     }
 
