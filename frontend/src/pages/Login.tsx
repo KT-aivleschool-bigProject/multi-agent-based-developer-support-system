@@ -51,7 +51,7 @@ const Login = () => {
         title: "로그인 성공",
         description: "환영합니다!",
       });
-      navigate('/dashboard');
+      navigate('/');
     } else {
       toast({
         title: "로그인 실패",

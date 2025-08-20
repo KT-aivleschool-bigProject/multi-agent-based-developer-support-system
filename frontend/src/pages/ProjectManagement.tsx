@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, FolderPlus, Users, Calendar, Target, Sparkles } from 'lucide-react';
+import { Plus, FolderPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { projectManagementAPI } from '@/services/api';
@@ -10,13 +9,7 @@ import { projectManagementAPI } from '@/services/api';
 const ProjectManagement = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isProjectDetailOpen, setIsProjectDetailOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
 
-  const handleProjectManage = (project: any) => {
-    setSelectedProject(project);
-    setIsProjectDetailOpen(true);
-  };
 
   const handleCreateProject = async () => {
     try {
@@ -31,33 +24,7 @@ const ProjectManagement = () => {
       toast({ title: '프로젝트 생성 실패', description: '다시 시도해주세요.', variant: 'destructive' });
     }
   };
-  // 샘플 데이터
-  const mockProjects = [
-    {
-      id: 1,
-      name: "웹 애플리케이션 개발",
-      status: "진행 중",
-      memberCount: 3,
-      team: {
-        name: "프론트엔드 팀",
-        members: ["김개발", "이코딩", "박리액트"],
-        description: "React 기반 프론트엔드 개발팀"
-      },
-      tasks: ["UI 디자인 완료", "API 연동 진행", "테스트 코드 작성"]
-    },
-    {
-      id: 2,
-      name: "모바일 앱 리뉴얼",
-      status: "계획 중",
-      memberCount: 5,
-      team: {
-        name: "백엔드 팀",
-        members: ["최서버", "정데이터", "한백엔드", "송API", "김DB"],
-        description: "Node.js 기반 백엔드 개발팀"
-      },
-      tasks: ["요구사항 분석", "기술 스택 선정", "개발 일정 수립"]
-    }
-  ];
+  // 최근 프로젝트 섹션 제거로 샘플 데이터 삭제
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,116 +43,35 @@ const ProjectManagement = () => {
             <CardDescription>새로운 개발 프로젝트와 팀을 함께 생성하고 관리하세요.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              className="w-full"
-              onClick={handleCreateProject}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              프로젝트 생성
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>최근 프로젝트</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockProjects.map((project) => (
-                <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">{project.name}</h4>
-                    <p className="text-sm text-muted-foreground">{project.status} • {project.memberCount}명</p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleProjectManage(project)}
-                  >
-                    관리
-                  </Button>
-                </div>
-              ))}
+            <div className="space-y-3">
+              <Button 
+                className="w-full"
+                onClick={handleCreateProject}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                프로젝트 생성
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  toast({
+                    title: 'GitHub 연동',
+                    description: 'GitHub 연동 기능은 준비 중입니다.',
+                  });
+                }}
+              >
+                <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clipRule="evenodd" />
+                </svg>
+                GitHub 연동
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 프로젝트 상세 관리 팝업 */}
-      <Dialog open={isProjectDetailOpen} onOpenChange={setIsProjectDetailOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedProject?.name} 관리</DialogTitle>
-            <DialogDescription>
-              프로젝트 정보, 팀 멤버, 진행 상황을 확인하세요.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedProject && (
-            <div className="grid gap-6 py-4">
-              {/* 프로젝트 기본 정보 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  프로젝트 정보
-                </h3>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p><strong>상태:</strong> {selectedProject.status}</p>
-                  <p><strong>팀원 수:</strong> {selectedProject.memberCount}명</p>
-                </div>
-              </div>
 
-              {/* 팀 정보 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  팀 정보
-                </h3>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">{selectedProject.team.name}</h4>
-                  <p className="text-sm text-muted-foreground mb-3">{selectedProject.team.description}</p>
-                  <div className="space-y-2">
-                    <p className="font-medium">팀 멤버:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProject.team.members.map((member: string, index: number) => (
-                        <span key={index} className="bg-primary/10 text-primary px-2 py-1 rounded-full text-sm">
-                          {member}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 진행 중인 작업 */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  진행 중인 작업
-                </h3>
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <div className="space-y-2">
-                    {selectedProject.tasks.map((task: string, index: number) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <span className="text-sm">{task}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsProjectDetailOpen(false)}>
-              닫기
-            </Button>
-            <Button>수정</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
