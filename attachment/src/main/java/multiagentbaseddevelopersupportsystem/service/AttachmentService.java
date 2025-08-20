@@ -310,7 +310,7 @@ public class AttachmentService {
     }
 
     private DocAgentResponse analyzeAttachmentAndSaveSwagger(ProjectAttachmentRequest fileInfo) {
-        String fastApiUrl = "https://6fca042d357e.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+        String fastApiUrl = "https://9d9858f8f96f.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -334,9 +334,13 @@ public class AttachmentService {
                 log.info("FastAPI 응답: {}", body);
                 if (body.isHasApiSpec()){
                     SwaggerYamlPost swaggerYamlPost = swaggerYamlPostRepository.findById(Long.valueOf(1)).orElseThrow(() -> new RuntimeException("SwaggerYamlPost not found"));
-                    // diff 계산해서 보내기
-                    swaggerYamlPost.setYamlContent(body.getYaml());
-                    swaggerYamlPostRepository.save(swaggerYamlPost);
+                    if(swaggerYamlPost.getYamlContent().isEmpty()){
+                        swaggerYamlPost.setYamlContent(body.getYaml());
+                        swaggerYamlPostRepository.save(swaggerYamlPost);
+                    } else {
+                        // 문서화 에이전트로부터 최종 yaml 파일 받아옴
+                    }
+                    
                 }
                 if (body.getProjectId() != null) {
                     body.publishAfterCommit();
@@ -376,5 +380,10 @@ public class AttachmentService {
         } 
         DocAgentResponse docAgentResponse = analyzeAttachmentAndSaveSwagger(fileInfo);
         return docAgentResponse;
+    }
+
+    public SwaggerYamlPost getSwaggerYamlPost() {
+        return swaggerYamlPostRepository.findById(Long.valueOf(1))
+            .orElseThrow(() -> new RuntimeException("SwaggerYamlPost not found"));
     }
 }
