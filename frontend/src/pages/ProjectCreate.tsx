@@ -62,7 +62,7 @@ const ProjectCreate = () => {
   const handleAll = async () => {
     await handleProjectCreate();
     await handleInviteMembers(Number(projectId), teamData.members.map(member => member.email));
-    await attachmentAPI.uploadFileCreatingProject(attachedFiles, projectId);
+    await uploadAllFiles(attachedFiles, Number(projectId));
   };
   const handleProjectCreate = async () => {
     if (!projectData.name || !projectData.description) {
@@ -96,33 +96,22 @@ const ProjectCreate = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length > 0) {
-      setAttachedFiles((prev) => [...prev, ...files]);
-      if (!projectId) {
-        toast({
-          title: '오류',
-          description: '프로젝트가 먼저 생성되어야 파일을 업로드할 수 있습니다.',
-          variant: 'destructive',
-        });
-        return;
+  const uploadAllFiles = async (files: File[], projectId: number) => {
+    if (!projectId) return;
+    try {
+      for (const file of files) {
+        await attachmentAPI.uploadFileCreatingProject(file, Number(projectId));
       }
-      try {
-        for (const file of files) {
-          await attachmentAPI.uploadFileCreatingProject(file, Number(projectId));
-        }
-        toast({
-          title: '파일 첨부 및 업로드 완료',
-          description: `${files.length}개의 파일이 서버에 업로드되었습니다.`,
-        });
-      } catch (error) {
-        toast({
-          title: '파일 업로드 실패',
-          description: '파일 업로드 중 오류가 발생했습니다.',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: '파일 첨부 및 업로드 완료',
+        description: `${files.length}개의 파일이 서버에 업로드되었습니다.`,
+      });
+    } catch (error) {
+      toast({
+        title: '파일 업로드 실패',
+        description: '파일 업로드 중 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
     }
   };
 

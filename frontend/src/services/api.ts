@@ -220,12 +220,7 @@ export const attachmentAPI = {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('projectId', projectId.toString());
-    const response = await api.post('/attachments/uploadcreatingproject', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      params: { projectId },
-    });
+    const response = await api.post('/attachments/uploadcreatingproject', formData);
     return response.data;
   },
   // 파일 업로드
@@ -346,4 +341,4 @@ export const projectManagementAPI = {
   },
 };
 
-export default api; 
+export default api;
