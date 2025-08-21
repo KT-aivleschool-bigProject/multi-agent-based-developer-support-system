@@ -277,7 +277,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
                 <div className="flex-1 relative">
                   <Textarea
                     ref={textareaRef}
-                    placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+                    placeholder="메시지를 입력하세요..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
