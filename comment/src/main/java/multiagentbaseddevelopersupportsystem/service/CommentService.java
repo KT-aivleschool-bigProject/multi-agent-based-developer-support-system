@@ -2,6 +2,7 @@ package multiagentbaseddevelopersupportsystem.service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
@@ -75,6 +76,6 @@ public class CommentService {
                             .userName(user.getName()) // 실제 userName 설정
                             .build();
                 })
-                .toList();
+                .collect(Collectors.toList());
     }
 }

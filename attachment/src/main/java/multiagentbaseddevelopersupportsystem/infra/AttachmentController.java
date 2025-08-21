@@ -12,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
+import multiagentbaseddevelopersupportsystem.domain.DocAgentResponse;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPost;
 import multiagentbaseddevelopersupportsystem.service.AttachmentService;
 
 @RestController
@@ -30,7 +32,7 @@ public class AttachmentController {
         return ResponseEntity.ok(attachment);
     }
 
-    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "projectId")
+    @PostMapping(value="/uploadcreatingproject", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, params = "projectId")
     public ResponseEntity<Attachment> uploadFileCreatingProject(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "projectId") Long projectId) throws IOException {
@@ -57,11 +59,28 @@ public class AttachmentController {
         String contentType = attachmentService.getContentType(filename);
         String originalFilename = attachmentService.getOriginalFilename(filename);
 
+        String encodedFilename = java.net.URLEncoder.encode(originalFilename, "UTF-8").replaceAll("\\+", "%20");
+
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, 
-                       "attachment; filename=\"" + originalFilename + "\"")
+                       "attachment; filename=\"" + originalFilename + "\"; filename*=UTF-8''" + encodedFilename)
                 .body(resource);
+    }
+
+    @PostMapping("/docagent/{fileId}")
+    public ResponseEntity<DocAgentResponse> getAutoCreatedPost(@PathVariable Long fileId) {
+        DocAgentResponse response = attachmentService.getAutoCreatedPost(fileId);
+        if (response == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/swaggeryaml")
+    public ResponseEntity<SwaggerYamlPost> getSwaggerYamlPost() {
+        SwaggerYamlPost swaggerYamlPost = attachmentService.getSwaggerYamlPost();
+        return ResponseEntity.ok(swaggerYamlPost);
     }
 }
 
