@@ -3,12 +3,15 @@ package multiagentbaseddevelopersupportsystem.domain;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class SwaggerYamlPostResponse {
-    private Long projectId;
-    private Long fileId;
+    private String projectId;
+    private String fileId;
     private String finalYaml;
+    private String comment;
 }
