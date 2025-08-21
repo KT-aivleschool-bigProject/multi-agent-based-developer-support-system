@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Upload, FileText, Image, File, X, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { attachmentAPI } from '@/services/api';
 
 interface Attachment {
   fileId: number;
@@ -22,6 +23,7 @@ interface FileAttachmentProps {
   postId: number;
   attachments: Attachment[];
   onAttachmentsChange: (attachments: Attachment[]) => void;
+  onAIGeneration?: (title: string, content: string) => void;
   isEditing?: boolean;
   disabled?: boolean;
 }
@@ -34,8 +36,9 @@ const ALLOWED_FILE_TYPES = [
   'txt', 'hwp'
 ];
 
-const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = false, disabled = false }: FileAttachmentProps) => {
+const FileAttachment = ({ postId, attachments, onAttachmentsChange, onAIGeneration, isEditing = false, disabled = false }: FileAttachmentProps) => {
   const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // 파일 검증 함수
   const validateFile = (file: File): { isValid: boolean; error?: string } => {
@@ -163,6 +166,71 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // AI 문서 생성
+  const handleAIGeneration = async () => {
+    if (attachments.length === 0) {
+      toast({
+        title: "파일 필요",
+        description: "AI 생성을 위해 첨부파일이 필요합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 첫 번째 첨부파일을 사용 (실제로는 사용자가 선택할 수 있도록 개선 가능)
+    const firstAttachment = attachments[0];
+    let fileIdForAI = firstAttachment.fileId;
+
+    setIsGenerating(true);
+    
+    try {
+      // blob URL이면 서버에 먼저 업로드
+      if (firstAttachment.fileUrl.startsWith('blob:')) {
+        const response = await fetch(firstAttachment.fileUrl);
+        const blob = await response.blob();
+        // Blob을 그대로 전송하고 파일명은 originalName으로 지정
+        const uploadedAttachment = await attachmentAPI.uploadFile(blob, postId, firstAttachment.originalName);
+
+        // blob URL 해제
+        try { URL.revokeObjectURL(firstAttachment.fileUrl); } catch {}
+
+        // 상태 업데이트: 임시 첨부파일을 업로드된 첨부파일로 교체
+        const updated = attachments.map(att => att.fileId === firstAttachment.fileId ? uploadedAttachment : att);
+        onAttachmentsChange(updated);
+        fileIdForAI = uploadedAttachment.fileId;
+      }
+
+      const response = await attachmentAPI.generateDocument(fileIdForAI);
+      
+      if (response && response.title && response.content) {
+        // 부모 컴포넌트에 AI 생성 결과 전달
+        if (onAIGeneration) {
+          onAIGeneration(response.title, response.content);
+        }
+        
+        toast({
+          title: "AI 생성 완료",
+          description: "첨부파일을 분석하여 제목과 내용을 생성했습니다.",
+        });
+      } else {
+        toast({
+          title: "AI 생성 실패",
+          description: "AI가 제목과 내용을 생성하지 못했습니다.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('AI 생성 실패:', error);
+      toast({
+        title: "AI 생성 오류",
+        description: "AI 생성 중 오류가 발생했습니다. 다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -179,17 +247,12 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
           type="button"
           variant="secondary"
           size="sm"
-          onClick={() =>
-            toast({
-              title: "AI 생성",
-              description: "첨부파일 기반 분석을 요청했어요.",
-            })
-          }
+          onClick={handleAIGeneration}
           aria-label="AI 생성"
-          disabled={disabled}
+          disabled={disabled || isGenerating}
         >
           <Sparkles className="h-4 w-4 mr-1" />
-          AI 생성
+          {isGenerating ? '생성 중...' : 'AI 생성'}
         </Button>
       </CardHeader>
 

@@ -53,6 +53,18 @@ const BoardNew = () => {
     setHasUnsavedChanges(true);
   };
 
+  // AI 생성 결과 처리
+  const handleAIGeneration = (title: string, content: string) => {
+    setTitle(title);
+    setContent(content);
+    setHasUnsavedChanges(true);
+    
+    toast({
+      title: "AI 생성 완료",
+      description: "제목과 내용이 자동으로 채워졌습니다.",
+    });
+  };
+
   // 첨부파일 업로드 처리
   const uploadAttachments = async (): Promise<void> => {
     if (attachments.length === 0) return;
@@ -395,6 +407,7 @@ const BoardNew = () => {
               postId={postId}
               attachments={attachments}
               onAttachmentsChange={handleAttachmentsChange}
+              onAIGeneration={handleAIGeneration}
               isEditing={true}
               disabled={isSubmitting}
             />
