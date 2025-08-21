@@ -257,16 +257,16 @@ const ProjectCreate = () => {
                     <div>
                       <Label htmlFor="project-files">파일 첨부</Label>
                       <div className="mt-2">
-                        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+                        <Card 
+                          className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer"
+                          onClick={() => document.getElementById('file-upload')?.click()}
+                        >
                           <CardContent className="pt-6">
                             <div className="text-center">
                               <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                              <Label 
-                                htmlFor="file-upload" 
-                                className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors"
-                              >
-                                파일을 선택하거나 드래그해서 업로드하세요
-                              </Label>
+                              <p className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                텍스트를 클릭하여 파일을 선택하세요
+                              </p>
                               <Input
                                 id="file-upload"
                                 type="file"
