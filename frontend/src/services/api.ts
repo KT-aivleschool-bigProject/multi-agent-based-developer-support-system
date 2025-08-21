@@ -134,12 +134,6 @@ export const userAPI = {
     const response = await api.get('/users/me');
     return response.data;
   },
-
-  // 사용자 정보 수정 (임시 비활성화)
-  updateProfile: async (data: any) => {
-    // TODO: 백엔드에서 프로필 수정 API 구현 필요
-    throw new Error('프로필 수정 기능이 아직 구현되지 않았습니다.');
-  },
 };
 
 // 게시판 관련 API
