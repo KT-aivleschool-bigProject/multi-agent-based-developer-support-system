@@ -111,6 +111,12 @@ export const authAPI = {
     const response = await api.post('/auth/reissue', data);
     return response.data;
   },
+
+  // 게스트 로그인
+  guestLogin: async () => {
+    const response = await api.get('/auth/guest');
+    return response.data;
+  },
 };
 
 // 사용자 관련 API
