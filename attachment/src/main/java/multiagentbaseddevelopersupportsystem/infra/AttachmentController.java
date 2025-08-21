@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Attachment;
 import multiagentbaseddevelopersupportsystem.domain.DocAgentResponse;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPost;
 import multiagentbaseddevelopersupportsystem.service.AttachmentService;
 
 @RestController
@@ -67,13 +68,19 @@ public class AttachmentController {
                 .body(resource);
     }
 
-    @GetMapping("/docagent/{fileId}")
+    @PostMapping("/docagent/{fileId}")
     public ResponseEntity<DocAgentResponse> getAutoCreatedPost(@PathVariable Long fileId) {
         DocAgentResponse response = attachmentService.getAutoCreatedPost(fileId);
         if (response == null) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/swaggeryaml")
+    public ResponseEntity<SwaggerYamlPost> getSwaggerYamlPost() {
+        SwaggerYamlPost swaggerYamlPost = attachmentService.getSwaggerYamlPost();
+        return ResponseEntity.ok(swaggerYamlPost);
     }
 }
 

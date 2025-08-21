@@ -29,7 +29,7 @@ public class AttachmentApplication {
         return args -> {
             if (swaggerYamlPostRepository.count() == 0) {
                 SwaggerYamlPost post = SwaggerYamlPost.builder()
-                    .yamlContent("# api 요구 문서가 게시판에 등록되지 않았습니다.\n")
+                    .yamlContent("")
                     .build();
                 swaggerYamlPostRepository.save(post);
             }

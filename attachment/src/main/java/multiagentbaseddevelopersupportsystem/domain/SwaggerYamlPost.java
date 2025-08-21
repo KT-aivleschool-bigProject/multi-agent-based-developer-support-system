@@ -4,6 +4,7 @@ import java.util.Date;
 import javax.persistence.*;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,6 +33,7 @@ public class SwaggerYamlPost {
     @Column(name = "created_at", updatable = false)
     private Date createdAt;
 
+    @UpdateTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_at")
     private Date updatedAt;
