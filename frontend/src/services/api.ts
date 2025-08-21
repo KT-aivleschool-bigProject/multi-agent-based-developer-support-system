@@ -16,8 +16,10 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     const user = localStorage.getItem('user');
+    const url = config.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/signup') || url.includes('/auth/reissue') || url.includes('/auth/guest');
     
-    if (token) {
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     
@@ -225,17 +227,26 @@ export const commentAPI = {
 // 첨부파일 관련 API
 export const attachmentAPI = {
   // 프로젝트 생성 중 파일 업로드
-  uploadFileCreatingProject: async (file: File, projectId: number) => {
+  uploadFileCreatingProject: async (file: Blob | File, projectId: number, filename?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    // filename 제공 시 명시적으로 파일명 설정
+    if (filename) {
+      formData.append('file', file, filename);
+    } else {
+      formData.append('file', file as any);
+    }
     formData.append('projectId', projectId.toString());
     const response = await api.post('/attachments/uploadcreatingproject', formData);
     return response.data;
   },
   // 파일 업로드
-  uploadFile: async (file: File, postId: number) => {
+  uploadFile: async (file: Blob | File, postId: number, filename?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    if (filename) {
+      formData.append('file', file, filename);
+    } else {
+      formData.append('file', file as any);
+    }
     formData.append('postId', postId.toString());
     
     const response = await api.post('/attachments/upload', formData, {
@@ -263,6 +274,12 @@ export const attachmentAPI = {
   // 파일 삭제
   deleteFile: async (fileId: number) => {
     const response = await api.delete(`/attachments/${fileId}`);
+    return response.data;
+  },
+
+  // AI 문서 생성 (DocAgent)
+  generateDocument: async (fileId: number) => {
+    const response = await api.post(`/attachments/docagent/${fileId}`);
     return response.data;
   },
 };
