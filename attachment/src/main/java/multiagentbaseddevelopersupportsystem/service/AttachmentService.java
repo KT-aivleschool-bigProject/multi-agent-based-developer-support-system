@@ -28,6 +28,8 @@ import multiagentbaseddevelopersupportsystem.domain.ProjectAttachmentRequest;
 import multiagentbaseddevelopersupportsystem.domain.ProjectCreated;
 import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPost;
 import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPostRepository;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPostRequest;
+import multiagentbaseddevelopersupportsystem.domain.SwaggerYamlPostResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -310,7 +312,7 @@ public class AttachmentService {
     }
 
     private DocAgentResponse analyzeAttachmentAndSaveSwagger(ProjectAttachmentRequest fileInfo) {
-        String fastApiUrl = "https://9d9858f8f96f.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+        String fastApiUrl = "https://3c9ec5be6d79.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -339,6 +341,19 @@ public class AttachmentService {
                         swaggerYamlPostRepository.save(swaggerYamlPost);
                     } else {
                         // 문서화 에이전트로부터 최종 yaml 파일 받아옴
+                        SwaggerYamlPostRequest sypRequest = SwaggerYamlPostRequest.builder()
+                            .projectId(String.valueOf(body.getProjectId()))
+                            .fileId(String.valueOf(body.getFileId()))
+                            .oldYaml(swaggerYamlPost.getYamlContent())
+                            .newYaml(body.getYaml())
+                            .build();
+                        SwaggerYamlPostResponse sypResponse = updateSwaggerYaml(sypRequest);
+                        if (sypResponse != null) {
+                            swaggerYamlPost.setYamlContent(sypResponse.getFinalYaml());
+                            swaggerYamlPostRepository.save(swaggerYamlPost);
+                        } else {
+                            log.error("Failed to update Swagger YAML");
+                        }
                     }
                 }
                 if (body.getProjectId() != null) {
@@ -384,5 +399,39 @@ public class AttachmentService {
     public SwaggerYamlPost getSwaggerYamlPost() {
         return swaggerYamlPostRepository.findById(Long.valueOf(1))
             .orElseThrow(() -> new RuntimeException("SwaggerYamlPost not found"));
+    }
+
+    public SwaggerYamlPostResponse updateSwaggerYaml(SwaggerYamlPostRequest request) {
+        String fastApiUrl = "https://3c9ec5be6d79.ngrok-free.app/finalize-yaml"; // 실제 엔드포인트로 변경
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<SwaggerYamlPostRequest> requestEntity = new HttpEntity<>(request, headers);
+        log.info("FastAPI 요청 requestEntity: {}", requestEntity);
+
+        try {
+            ResponseEntity<SwaggerYamlPostResponse> response = restTemplate.exchange(
+                fastApiUrl,
+                org.springframework.http.HttpMethod.POST,
+                requestEntity,
+                new ParameterizedTypeReference<SwaggerYamlPostResponse>() {}
+            );
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("FastAPI 응답 코드: {}", response.getStatusCode());
+            }
+            SwaggerYamlPostResponse body = response.getBody();
+            if (body != null) {
+                log.info("FastAPI 응답: {}", body);
+                return body;
+            
+            } else {
+                log.warn("FastAPI 응답이 비어있습니다.");
+            }
+        } catch (Exception e) {
+            log.error("FastAPI 서버 호출 실패: {}", e.getMessage(), e);
+        }
+        return null;
     }
 }
