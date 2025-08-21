@@ -72,7 +72,7 @@ api.interceptors.response.use(
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
-          window.location.href = '/login';
+          window.location.href = '/'; // 메인화면으로 리다이렉트
         }
       }
     }

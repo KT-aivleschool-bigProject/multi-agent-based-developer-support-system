@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, X, ChevronLeft, Plus, Upload, FileText } from 'lucide-react';
+import { X, ChevronLeft, Plus, Upload, FileText, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { projectManagementAPI, attachmentAPI } from '@/services/api';
@@ -397,15 +397,7 @@ const ProjectCreate = () => {
         </div>
       </div>
 
-      {/* 챗봇 버튼 */}
-      <div className="fixed bottom-6 right-6">
-        <Button
-          size="lg"
-          className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-        >
-          <Sparkles className="h-6 w-6" />
-        </Button>
-      </div>
+
     </div>
   );
 };

@@ -34,7 +34,7 @@ const Login = () => {
 
     // 컴포넌트가 로드되자마자 자동으로 게스트 로그인 실행
     autoGuestLogin();
-  }, [guestLogin, navigate]);
+  }, []); // 빈 의존성 배열로 변경하여 컴포넌트 마운트 시에만 실행
 
   // 비밀번호 복잡성 검증 제거 - 단순한 길이만 체크
   const validatePassword = (password: string): { isValid: boolean; message: string } => {
