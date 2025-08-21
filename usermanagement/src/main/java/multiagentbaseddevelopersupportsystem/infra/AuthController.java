@@ -40,4 +40,10 @@ public class AuthController {
         authService.logout(token);
         return ResponseEntity.noContent().build();  
     }
+
+    @GetMapping("/guest")
+    public ResponseEntity<?> guestLogin() {
+        LoginCommand command = new LoginCommand("guest@system.com", "guest1234!");
+        return ResponseEntity.ok(authService.login(command));
+    }
 }
