@@ -195,21 +195,14 @@ const FileAttachment = ({ postId, attachments, onAttachmentsChange, isEditing = 
 
       <CardContent className="space-y-4">
         {/* 파일 업로드 영역 */}
-        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+        <div 
+          className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
+          onClick={() => document.getElementById('file-input')?.click()}
+        >
           <Upload className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-300 mb-2">
-            파일을 여기에 드래그하거나 클릭하여 선택하세요
+            텍스트를 클릭하여 파일을 선택하세요
           </p>
-          
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => document.getElementById('file-input')?.click()}
-            disabled={disabled}
-            className="mt-2"
-          >
-            파일 선택
-          </Button>
           
           <Input
             id="file-input"
