@@ -1,16 +1,30 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { Code2, Users, MessageSquare, Zap, ArrowRight, GitBranch, Bot } from 'lucide-react';
+import { Code2, Users, MessageSquare, Zap, ArrowRight, GitBranch, Bot, Loader2 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import AIAssistant from '@/components/AIAssistant';
+import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, guestLogin } = useAuth();
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
+
+  const handleGuestLogin = async () => {
+    if (isGuestLoading) return;
+    setIsGuestLoading(true);
+    const ok = await guestLogin();
+    setIsGuestLoading(false);
+    if (ok) {
+      toast({ title: '게스트 로그인 성공', description: '게스트 계정으로 로그인되었습니다.' });
+    } else {
+      toast({ title: '게스트 로그인 실패', description: '잠시 후 다시 시도해주세요.', variant: 'destructive' });
+    }
+  };
 
   const features = [
     { icon: Users, title: '멀티 에이전트 협업', description: 'AI 에이전트들과 함께 코드를 작성하고 리뷰받으세요', badge: 'AI' },
@@ -42,6 +56,16 @@ const Index = () => {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" asChild>
               <Link to="/login">로그인</Link>
+            </Button>
+            <Button variant="ghost" onClick={handleGuestLogin} disabled={isGuestLoading}>
+              {isGuestLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  게스트 로그인 중...
+                </>
+              ) : (
+                'Guest 로그인'
+              )}
             </Button>
             <Button asChild>
               <Link to="/register">회원가입</Link>

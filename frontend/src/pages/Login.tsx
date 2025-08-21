@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,29 +12,8 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, guestLogin, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
-
-  // 자동 게스트 로그인 실행
-  useEffect(() => {
-    const autoGuestLogin = async () => {
-      try {
-        const success = await guestLogin();
-        if (success) {
-          toast({
-            title: "게스트 로그인 성공",
-            description: "게스트 계정으로 자동 로그인되었습니다.",
-          });
-          navigate('/');
-        }
-      } catch (error) {
-        console.error('자동 게스트 로그인 실패:', error);
-      }
-    };
-
-    // 컴포넌트가 로드되자마자 자동으로 게스트 로그인 실행
-    autoGuestLogin();
-  }, []); // 빈 의존성 배열로 변경하여 컴포넌트 마운트 시에만 실행
 
   // 비밀번호 복잡성 검증 제거 - 단순한 길이만 체크
   const validatePassword = (password: string): { isValid: boolean; message: string } => {
@@ -94,9 +73,6 @@ const Login = () => {
           <CardDescription>
             회사 이메일로 로그인하세요
           </CardDescription>
-          <div className="mt-2 text-sm text-muted-foreground">
-            자동으로 게스트 계정으로 로그인 중...
-          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -147,7 +123,7 @@ const Login = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  게스트 로그인 중...
+                  로그인 중...
                 </>
               ) : (
                 '로그인'
