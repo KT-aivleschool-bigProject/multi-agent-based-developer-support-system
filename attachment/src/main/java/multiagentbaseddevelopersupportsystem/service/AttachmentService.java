@@ -312,7 +312,7 @@ public class AttachmentService {
     }
 
     private DocAgentResponse analyzeAttachmentAndSaveSwagger(ProjectAttachmentRequest fileInfo) {
-        String fastApiUrl = "https://9d9858f8f96f.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
+        String fastApiUrl = "https://3c9ec5be6d79.ngrok-free.app/analyze"; // 실제 엔드포인트로 변경
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -342,8 +342,8 @@ public class AttachmentService {
                     } else {
                         // 문서화 에이전트로부터 최종 yaml 파일 받아옴
                         SwaggerYamlPostRequest sypRequest = SwaggerYamlPostRequest.builder()
-                            .projectId(body.getProjectId())
-                            .fileId(body.getFileId())
+                            .projectId(String.valueOf(body.getProjectId()))
+                            .fileId(String.valueOf(body.getFileId()))
                             .oldYaml(swaggerYamlPost.getYamlContent())
                             .newYaml(body.getYaml())
                             .build();
@@ -402,7 +402,7 @@ public class AttachmentService {
     }
 
     public SwaggerYamlPostResponse updateSwaggerYaml(SwaggerYamlPostRequest request) {
-        String fastApiUrl = "https://9d9858f8f96f.ngrok-free.app/finalize-yaml"; // 실제 엔드포인트로 변경
+        String fastApiUrl = "https://3c9ec5be6d79.ngrok-free.app/finalize-yaml"; // 실제 엔드포인트로 변경
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
