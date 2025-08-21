@@ -22,6 +22,7 @@ interface TokenResponse {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  guestLogin: () => Promise<boolean>;
   register: (name: string, email: string, password: string, position: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -223,6 +224,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const guestLogin = async (): Promise<boolean> => {
+    setIsLoading(true);
+    
+    try {
+      const response: TokenResponse = await authAPI.guestLogin();
+      
+      const { accessToken, refreshToken } = response;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      const payload = parseJwt(accessToken);
+      if (payload) {
+        const basicUser = extractBasicUserFromToken(payload);
+        if (basicUser) {
+          const userDetails = await fetchUserDetails(basicUser.userId, basicUser.email, basicUser.role);
+          if (userDetails) {
+            setUser(userDetails);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return true;
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Guest login error:', error);
+      setIsLoading(false);
+      return false;
+    }
+    
+    setIsLoading(false);
+    return false;
+  };
+
   const logout = async (): Promise<void> => {
     try {
       await authAPI.logout();
@@ -240,6 +274,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ 
       user, 
       login, 
+      guestLogin,
       register, 
       logout, 
       isLoading,
