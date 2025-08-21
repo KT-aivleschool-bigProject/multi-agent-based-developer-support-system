@@ -267,6 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      // 로그아웃 후 메인화면으로 이동
+      window.location.href = '/';
     }
   };
 
