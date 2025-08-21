@@ -8,9 +8,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, Upload, FileText, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
@@ -23,6 +23,7 @@ interface Message {
   text: string;
   sender: Sender;
   timestamp: Date;
+  attachments?: File[];
 }
 
 interface AIAssistantProps {
@@ -45,35 +46,76 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 스크롤을 항상 최신 메시지로 이동
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, open]);
 
-  // Enter 키로 전송
-  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+  // Enter 키로 전송, Shift+Enter로 줄바꿈
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
+  // 파일 선택 처리
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    
+    const newFiles = Array.from(files);
+    setAttachments(prev => [...prev, ...newFiles]);
+    
+    // 토스트 알림
+    newFiles.forEach(file => {
+      toast({
+        title: "파일 업로드 완료",
+        description: `${file.name}이 업로드되었습니다.`,
+      });
+    });
+  };
+
+  // 파일 제거
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // 입력창 높이 초기화
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '40px';
+    }
+  };
+
   const handleSendMessage = async () => {
     const value = input.trim();
-    if (!value || sending) return;
+    if (!value && attachments.length === 0) return;
 
     // 1) 사용자 메시지를 먼저 UI에 추가
+    let messageText = value;
+    if (attachments.length > 0) {
+      messageText += attachments.map(file => ` [첨부파일: ${file.name}]`).join('');
+    }
+
     const userMsg: Message = {
       id: Date.now(),
-      text: value,
+      text: messageText,
       sender: 'user',
       timestamp: new Date(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
+    setAttachments([]);
     setSending(true);
+    
+    // 입력창 높이 초기화
+    resetTextareaHeight();
 
     try {
       // 2) center_agent 로직: { message } 전송
@@ -113,7 +155,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
           ? err.response.data.detail.map((d: any) => d?.msg ?? d).join(', ')
           : typeof err?.response?.data?.detail === 'string'
           ? err.response.data.detail
-          : err?.message || '원인을 알 수 없습니다.');
+          : err.message || '원인을 알 수 없습니다.');
 
       const errorText = `서버와 통신이 실패했습니다: ${cause}\n잠시 후 다시 시도해 주세요.`;
 
@@ -141,19 +183,44 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
 
   const Bubble: React.FC<{ msg: Message }> = ({ msg }) => {
     const isUser = msg.sender === 'user';
-    const bubbleMaxWidth = embedded ? 'max-w-full' : 'max-w-[80%]';
+    const bubbleMaxWidth = embedded ? 'max-w-full' : 'max-w-[85%]';
+    
     return (
-      <div className={`w-full flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`}>
+      <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+        {msg.sender === 'ai' && (
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+            <Bot className="h-4 w-4 text-primary-foreground" />
+          </div>
+        )}
         <div
-          className={`${bubbleMaxWidth} rounded-2xl px-4 py-2 shadow-sm ${
-            isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+          className={`${bubbleMaxWidth} rounded-lg p-3 ${
+            isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
           }`}
         >
-          <div className="text-sm whitespace-pre-wrap break-words">{msg.text}</div>
-          <div className="mt-1 flex items-center">
-            <span className="ml-auto text-xs opacity-60">{msg.timestamp.toLocaleTimeString()}</span>
-          </div>
+          <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+          
+          {/* 첨부파일 표시 */}
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {msg.attachments.map((file, index) => (
+                <div key={index} className="flex items-center gap-2 text-xs bg-black/10 rounded px-2 py-1">
+                  <FileText className="h-3 w-3" />
+                  <span className="truncate">{file.name}</span>
+                  <span className="text-xs opacity-70">({(file.size / 1024).toFixed(1)}KB)</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <p className="text-xs opacity-70 mt-1">
+            {msg.timestamp.toLocaleTimeString()}
+          </p>
         </div>
+        {msg.sender === 'user' && (
+          <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-medium">U</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -176,24 +243,83 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
             {sending && <div className="text-xs opacity-70 mt-2">응답 생성 중…</div>}
           </div>
         </ScrollArea>
-        <div className="mt-3 px-2">
+        
+        {/* 입력창 영역 */}
+        <div className="mt-3 px-2 pb-4">
           {!isAuthenticated ? (
             <div className="text-sm text-muted-foreground">
               AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="질문을 입력하세요 (Enter 전송)"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={sending}
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage} size="sm" disabled={sending || !input.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
+            <div className="space-y-2">
+              {/* 첨부파일 표시 영역 */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{file.name}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeAttachment(index)}
+                        className="ml-auto h-auto p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* 입력창과 버튼 */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 relative">
+                  <Textarea
+                    ref={textareaRef}
+                    placeholder="메시지를 입력하세요... (Shift+Enter로 줄바꿈)"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pr-10 resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+                    rows={1}
+                    style={{
+                      height: '40px',
+                      minHeight: '40px',
+                      maxHeight: '120px'
+                    }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                    }}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                    onChange={(e) => handleFileSelect(e.target.files)}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <label htmlFor="file-input">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      asChild
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                    >
+                      <span className="cursor-pointer">
+                        <Upload className="h-4 w-4" />
+                      </span>
+                    </Button>
+                  </label>
+                </div>
+                <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -219,7 +345,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
       </SheetTrigger>
 
       {/* 사이드 패널 */}
-      <SheetContent side="right" className="w-[380px] sm:w-[420px] h-full flex flex-col">
+      <SheetContent side="right" className="w-[450px] sm:w-[500px] h-full flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" /> AI 어시스턴트
