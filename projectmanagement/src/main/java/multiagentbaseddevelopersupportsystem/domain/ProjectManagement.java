@@ -21,12 +21,10 @@ public class ProjectManagement {
 
     private String projectDescription;
 
+    private String githubUrl; // GitHub 저장소 URL
+
     private ProjectStatus projectStatus;
 
-    @ElementCollection
-    @CollectionTable(name = "project_attachments", joinColumns = @JoinColumn(name = "project_id"))
-    @Column(name = "attachment_url")
-    private List<String> attachments;
 
     public static ProjectManagementRepository repository() {
         ProjectManagementRepository projectManagementRepository = ProjectmanagementApplication.applicationContext.getBean(
@@ -41,12 +39,8 @@ public class ProjectManagement {
         // 프로젝트 정보 설정
         this.projectName = createProjectCommand.getProjectName();
         this.projectDescription = createProjectCommand.getProjectDescription();
+        this.githubUrl = createProjectCommand.getGithubUrl();
         this.projectStatus = createProjectCommand.getProjectStatus();
-
-        // 첨부파일 URL 설정
-        if (createProjectCommand.getAttachments() != null) {
-            this.attachments = createProjectCommand.getAttachments();
-        }
 
         // 프로젝트 생성 이벤트 발행
         ProjectCreated projectCreated = new ProjectCreated(this);

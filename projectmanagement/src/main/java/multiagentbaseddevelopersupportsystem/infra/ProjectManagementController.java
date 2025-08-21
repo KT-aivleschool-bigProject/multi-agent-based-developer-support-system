@@ -2,7 +2,9 @@ package multiagentbaseddevelopersupportsystem.infra;
 
 import java.util.Optional;
 import java.util.List;
-import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
@@ -11,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.http.ResponseEntity;
 
 //<<< Clean Arch / Inbound Adaptor
@@ -25,7 +26,7 @@ public class ProjectManagementController {
     ProjectManagementRepository projectManagementRepository;
 
     @PostMapping("/init")
-    public ResponseEntity<Long> initProject(@RequestHeader("X-User-Id") Long userId) {
+    public ResponseEntity<Map<String, Long>> initProject(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
         // 빈 프로젝트 생성
         ProjectManagement project = new ProjectManagement();
         project.setProjectName(""); // 빈 값 또는 기본값
@@ -34,26 +35,20 @@ public class ProjectManagementController {
 
         projectManagementRepository.save(project);
 
-        return ResponseEntity.status(201).body(project.getProjectId());
+        Map<String, Long> result = new HashMap<>();
+        result.put("projectId", project.getProjectId());
+        return ResponseEntity.status(201).body(result);
     }
 
-    @RequestMapping(
-        value = "/createproject",
-        method = RequestMethod.POST,
-        produces = "application/json;charset=UTF-8",
-        consumes = "multipart/form-data"
-    )
-    public ProjectManagement createProject(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        @RequestParam("projectId") Long projectId, // projectId 추가
+    @PutMapping("/{projectId}/saveproject")
+    public ProjectManagement updateProject(
+        @PathVariable("projectId") Long projectId,
         @RequestParam("projectName") String projectName,
         @RequestParam("projectDescription") String projectDescription,
-        @RequestParam(value = "files", required = false) List<MultipartFile> files,
-        @RequestParam(value = "projectStatus", required = false) String projectStatus,
+        @RequestParam(value = "githubUrl", required = false) String githubUrl,
         @RequestParam(value = "inviteEmails", required = false) List<String> inviteEmails
     ) throws Exception {
-        System.out.println("##### /projectManagement/createProject  called #####");
+        System.out.println("##### /projectManagements/" + projectId + "/saveproject called #####");
 
         Optional<ProjectManagement> optionalProject = projectManagementRepository.findById(projectId);
         if (!optionalProject.isPresent()) {
@@ -62,16 +57,46 @@ public class ProjectManagementController {
 
         ProjectManagement projectManagement = optionalProject.get();
 
-        // 프로젝트 정보 업데이트
-        projectManagement.setProjectName(projectName);
-        projectManagement.setProjectDescription(projectDescription);
-        if (projectStatus != null) {
-            projectManagement.setProjectStatus(ProjectStatus.valueOf(projectStatus));
-        }
+        // CreateProjectCommand 생성
+        CreateProjectCommand createProjectCommand = new CreateProjectCommand();
+        createProjectCommand.setProjectName(projectName);
+        createProjectCommand.setProjectDescription(projectDescription);
+        createProjectCommand.setGithubUrl(githubUrl);
+        createProjectCommand.setProjectStatus(ProjectStatus.valueOf("TEAM_BUILDING"));
+        createProjectCommand.setInviteEmails(inviteEmails);
 
+        // 도메인 로직 호출 (ProjectCreated 이벤트 발행)
+        projectManagement.createProject(createProjectCommand);
+        
+        // 영속화
         projectManagementRepository.save(projectManagement);
 
         return projectManagement;
+    }
+
+    // 프로젝트 조회 API
+    @GetMapping("/{projectId}")
+    public ResponseEntity<ProjectManagement> getProject(@PathVariable("projectId") Long projectId) {
+        System.out.println("##### /projectManagements/" + projectId + " getProject called #####");
+
+        Optional<ProjectManagement> optionalProject = projectManagementRepository.findById(projectId);
+        if (!optionalProject.isPresent()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        ProjectManagement project = optionalProject.get();
+        return ResponseEntity.ok(project);
+    }
+
+    // 모든 프로젝트 목록 조회 API
+    @GetMapping
+    public ResponseEntity<List<ProjectManagement>> getAllProjects() {
+        System.out.println("##### /projectManagements getAllProjects called #####");
+
+        Iterable<ProjectManagement> projectsIterable = projectManagementRepository.findAll();
+        List<ProjectManagement> projects = new ArrayList<>();
+        projectsIterable.forEach(projects::add);
+        return ResponseEntity.ok(projects);
     }
 
 

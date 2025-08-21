@@ -31,8 +31,8 @@ public class Post  {
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Long postId;    
-    
+    private Long postId;
+
     @Column(name="title", nullable=false, length = 200)
     private String title;    
     

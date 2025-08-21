@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -82,6 +81,13 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/projects/create" element={
+              <ProtectedRoute>
+                <Layout>
+                  <ProjectCreate />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/projects/create/:projectId" element={
               <ProtectedRoute>
                 <Layout>
                   <ProjectCreate />

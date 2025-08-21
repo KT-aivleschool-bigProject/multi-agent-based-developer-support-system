@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import multiagentbaseddevelopersupportsystem.domain.Post;
+import multiagentbaseddevelopersupportsystem.domain.PostCreatedByAttachmentAgent;
 import multiagentbaseddevelopersupportsystem.domain.PostDeleted;
 import multiagentbaseddevelopersupportsystem.domain.PostRepository;
 import multiagentbaseddevelopersupportsystem.domain.PostResponseDto;
@@ -26,7 +27,6 @@ import multiagentbaseddevelopersupportsystem.external.UserClient;
 public class PostService {
 
     private final PostRepository postRepository;
-    private final UserClient userClient;
 
     public Long startPostWriting(Long userId) {
         Post post = Post.builder()
@@ -111,6 +111,7 @@ public class PostService {
             .viewCount(0)
             .userId(null)
             .status(PostStatus.PUBLISHED)
+            .createdAt(new Date())
             .build();
         Long postId = postRepository.save(post).getPostId();
         PostCreatedByAttachmentAgent postCreatedByAttachmentAgent = new PostCreatedByAttachmentAgent();
