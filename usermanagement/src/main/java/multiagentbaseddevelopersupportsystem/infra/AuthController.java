@@ -48,15 +48,15 @@ public class AuthController {
     }
 
     @PostMapping("/password-reset/request")
-    public ResponseEntity<?> requestPasswordReset(@RequestParam String email) {
-        String token = authService.requestPasswordReset(email);
+    public ResponseEntity<?> requestPasswordReset(@RequestBody @Valid PasswordRequest passwordRequest) {
+        String token = authService.requestPasswordReset(passwordRequest.getEmail());
         // 실제로는 이메일로 토큰을 발송해야 함
         return ResponseEntity.ok(token);
     }
 
     @PostMapping("/password-reset")
-    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
-        authService.resetPassword(token, newPassword);
+    public ResponseEntity<?> resetPassword(@RequestBody @Valid PasswordResetRequest passwordResetRequest) {
+        authService.resetPassword(passwordResetRequest.getToken(), passwordResetRequest.getNewPassword());
         return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
     }
 }
