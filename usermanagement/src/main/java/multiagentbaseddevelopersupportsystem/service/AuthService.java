@@ -138,6 +138,6 @@ public class AuthService {
         LocalDateTime changedAt = user.getPasswordChangedAt();
         if (changedAt == null || changedAt.plusDays(PASSWORD_EXPIRE_DAYS).isBefore(LocalDateTime.now())) {
             throw new BusinessException("비밀번호가 만료되었습니다. 변경해주세요.");
+        }
     }
-}
 }
