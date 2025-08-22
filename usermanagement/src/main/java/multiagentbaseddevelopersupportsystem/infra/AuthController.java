@@ -46,4 +46,17 @@ public class AuthController {
         LoginCommand command = new LoginCommand("guest@system.com", "guest1234!");
         return ResponseEntity.ok(authService.login(command));
     }
+
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<?> requestPasswordReset(@RequestParam String email) {
+        String token = authService.requestPasswordReset(email);
+        // 실제로는 이메일로 토큰을 발송해야 함
+        return ResponseEntity.ok(token);
+    }
+
+    @PostMapping("/password-reset")
+    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+        authService.resetPassword(token, newPassword);
+        return ResponseEntity.ok("비밀번호가 성공적으로 변경되었습니다.");
+    }
 }
