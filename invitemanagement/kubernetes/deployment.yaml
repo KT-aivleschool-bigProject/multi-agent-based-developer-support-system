@@ -16,12 +16,43 @@ spec:
     spec:
       containers:
         - name: invitemanagement
-          image: "username/invitemanagement:latest"
+          image: "bigproject.azurecr.io/invitemanagement:v4"
+          env:
+            - name: AZURE_MYSQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: url
+            - name: AZURE_MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: username
+            - name: AZURE_MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: password
+            - name: AZURE_STORAGE_ACCOUNT_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: azure-storage-secret
+                  key: azure-storage-account-name
+            - name: AZURE_STORAGE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: azure-storage-secret
+                  key: azure-storage-account-key
+            - name: AZURE_STORAGE_CONTAINER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: azure-storage-secret
+                  key: azure-storage-container-name
           ports:
             - containerPort: 8080
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/management/health'
               port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2
@@ -29,7 +60,7 @@ spec:
             failureThreshold: 10
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/management/health'
               port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2

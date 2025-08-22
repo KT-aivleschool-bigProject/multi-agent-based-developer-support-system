@@ -65,6 +65,12 @@ public class User {
     @Column(name = "password_changed_at")
     private LocalDateTime passwordChangedAt;
 
+    @Column(name = "login_fail_count")
+    private int loginFailCount = 0;
+
+    @Column(name = "locked")
+    private boolean locked = false;
+
     public static User toEntity(SignupCommand cmd, BCryptPasswordEncoder encoder) {
         return User.builder()
                 .email(cmd.getEmail())
