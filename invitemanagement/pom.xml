@@ -90,6 +90,10 @@
 			<version>${cucumber.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+  			<groupId>mysql</groupId>
+  			<artifactId>mysql-connector-java</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
