@@ -9,6 +9,13 @@ import javax.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import  java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -18,6 +25,18 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(@RequestBody @Valid SignupCommand command) {
+        // 1. reCAPTCHA 검증
+        if (command.getRecaptchaToken() == null || command.getRecaptchaToken().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        RestTemplate restTemplate = new RestTemplate();
+        String verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=6Le2Ta4rAAAAAHcix0JBDwjgDDn6pxenW49ktm-Z&response=" + command.getRecaptchaToken();
+        Map response = restTemplate.postForObject(verifyUrl, null, Map.class);
+        if (response == null || !(Boolean) response.get("success")) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        // 2. 기존 회원가입 로직
         authService.signup(command);
         return ResponseEntity.ok().build(); 
     }
