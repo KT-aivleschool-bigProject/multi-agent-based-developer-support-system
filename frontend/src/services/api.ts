@@ -91,6 +91,8 @@ export const authAPI = {
     password: string;
     name: string;
     position: string;
+    recaptchaToken: string | null;
+
   }) => {
     const response = await api.post('/auth/signup', data);
     return response.data;
