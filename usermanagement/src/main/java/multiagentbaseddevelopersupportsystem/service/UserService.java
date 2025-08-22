@@ -18,7 +18,6 @@ import multiagentbaseddevelopersupportsystem.domain.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder encoder;
 
     public UserDto getUserById(Long userId) {
        User user = userRepository.findById(userId)
