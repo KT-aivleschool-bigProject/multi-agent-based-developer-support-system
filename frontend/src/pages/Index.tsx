@@ -17,12 +17,16 @@ const Index = () => {
   const handleGuestLogin = async () => {
     if (isGuestLoading) return;
     setIsGuestLoading(true);
-    const ok = await guestLogin();
+    const result = await guestLogin();
     setIsGuestLoading(false);
-    if (ok) {
+    if (result) {
       toast({ title: '게스트 로그인 성공', description: '게스트 계정으로 로그인되었습니다.' });
     } else {
-      toast({ title: '게스트 로그인 실패', description: '잠시 후 다시 시도해주세요.', variant: 'destructive' });
+      toast({ 
+        title: '게스트 로그인 실패', 
+        description: '게스트 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.', 
+        variant: 'destructive' 
+      });
     }
   };
 

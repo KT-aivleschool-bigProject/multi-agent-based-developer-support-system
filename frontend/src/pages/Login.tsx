@@ -15,14 +15,6 @@ const Login = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  // 비밀번호 복잡성 검증 제거 - 단순한 길이만 체크
-  const validatePassword = (password: string): { isValid: boolean; message: string } => {
-    if (password.length < 1) {
-      return { isValid: false, message: "비밀번호를 입력해주세요." };
-    }
-    return { isValid: true, message: "" };
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -34,19 +26,9 @@ const Login = () => {
       });
       return;
     }
-
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      toast({
-        title: "비밀번호 오류",
-        description: passwordValidation.message,
-        variant: "destructive",
-      });
-      return;
-    }
     
-    const success = await login(email, password);
-    if (success) {
+    const result = await login(email, password);
+    if (result) {
       toast({
         title: "로그인 성공",
         description: "환영합니다!",
@@ -55,7 +37,7 @@ const Login = () => {
     } else {
       toast({
         title: "로그인 실패",
-        description: "이메일 또는 비밀번호를 확인해주세요.",
+        description: "이메일 또는 비밀번호가 일치하지 않습니다.",
         variant: "destructive",
       });
     }
@@ -136,6 +118,11 @@ const Login = () => {
               계정이 없으신가요?{' '}
               <Link to="/register" className="text-primary hover:underline">
                 회원가입
+              </Link>
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              <Link to="/password-reset" className="text-primary hover:underline">
+                비밀번호 재설정
               </Link>
             </p>
           </div>
