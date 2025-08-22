@@ -28,7 +28,7 @@ const Index = () => {
 
   const features = [
     { icon: Users, title: '멀티 에이전트 협업', description: 'AI 에이전트들과 함께 코드를 작성하고 리뷰받으세요', badge: 'AI' },
-    { icon: MessageSquare, title: '실시간 토론', description: '개발자들과 실시간으로 소통하며 문제를 해결하세요', badge: '커뮤니티' },
+    { icon: MessageSquare, title: '문서 게시판', description: '개발자들과 게시판으로 소통하며 문제를 해결하세요', badge: '커뮤니티' },
     { icon: GitBranch, title: '코드 협업', description: '프로젝트를 공유하고 함께 개발해보세요', badge: '협업' },
     { icon: Zap, title: '빠른 피드백', description: '즉시 코드 리뷰와 개선 제안을 받아보세요', badge: '효율성' },
   ];
