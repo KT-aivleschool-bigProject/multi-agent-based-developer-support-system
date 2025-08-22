@@ -1,7 +1,10 @@
 package multiagentbaseddevelopersupportsystem.service;
 
+import java.util.UUID;
+
 import javax.transaction.Transactional;
 
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import multiagentbaseddevelopersupportsystem.domain.UserRepository;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder encoder;
 
     public UserDto getUserById(Long userId) {
        User user = userRepository.findById(userId)
