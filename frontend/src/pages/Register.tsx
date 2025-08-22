@@ -111,7 +111,7 @@ const Register = () => {
     } else {
       toast({
         title: "회원가입 실패",
-        description: "입력 정보를 확인해주세요.",
+        description: "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     }
