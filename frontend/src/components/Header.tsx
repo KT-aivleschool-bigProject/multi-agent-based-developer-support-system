@@ -25,7 +25,7 @@ const Header = () => {
       title: "로그아웃 완료",
       description: "안전하게 로그아웃되었습니다.",
     });
-    navigate('/login');
+    navigate('/');
   };
 
   const getThemeIcon = () => {
