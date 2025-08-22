@@ -32,5 +32,5 @@ public class PasswordResetRequest {
         "(?=.*\\d)(?=.*[!@#$%^&*\\-_=+\\[\\]{}|:,.?/~])(?!.*[()<>\"';'])[\\d!@#$%^&*\\-_=+\\[\\]{}|:,.?/~]{10,16}" +
         ")$",
         message = "비밀번호는 영어, 숫자, 특수문자( ( ) < > \" ' ; 제외) 중 2종류 조합 시 10~16자리, 3종류 조합 시 8~16자리여야 합니다.")
-    private String password;
+    private String newPassword;
 }
