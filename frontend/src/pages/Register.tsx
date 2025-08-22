@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Code2, Loader2, Eye, EyeOff } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -21,6 +22,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const { register, isLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -99,7 +101,7 @@ const Register = () => {
       return;
     }
     
-    const success = await register(name, email, password, position);
+    const success = await register(name, email, password, position, recaptchaToken);
     if (success) {
       toast({
         title: "회원가입 성공",
@@ -261,7 +263,11 @@ const Register = () => {
                 </Link>
               </Label>
             </div>
-            
+            <ReCAPTCHA
+              sitekey="6Le2Ta4rAAAAAP8UCdOiOAN5dbvl073CBg2UxnAQ" // 테스트 키
+              onChange={setRecaptchaToken}
+              className="my-2"
+            />
             <Button type="submit" className="w-full" disabled={isLoading || !agreeToTerms}>
               {isLoading ? (
                 <>

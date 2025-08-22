@@ -42,4 +42,13 @@ public class SignupCommand {
     @NotBlank(message = "직책은 필수입니다.")
     @Size(max = 50, message = "직책은 최대 50자까지 입력할 수 있습니다.")
     private String position;
+    private String recaptchaToken;
+
+    public String getRecaptchaToken() {
+        return recaptchaToken;
+    }
+
+    public void setRecaptchaToken(String recaptchaToken) {
+        this.recaptchaToken = recaptchaToken;
+    }
 }

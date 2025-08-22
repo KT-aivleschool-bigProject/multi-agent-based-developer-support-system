@@ -23,7 +23,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
   guestLogin: () => Promise<boolean>;
-  register: (name: string, email: string, password: string, position: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string, position: string, recaptchaToken: string | null) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -210,11 +210,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const register = async (name: string, email: string, password: string, position: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string, position: string, recaptchaToken: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      await authAPI.signup({ name, email, password, position });
+      await authAPI.signup({ name, email, password, position, recaptchaToken });
       setIsLoading(false);
       return true;
     } catch (error: any) {
