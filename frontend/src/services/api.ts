@@ -119,6 +119,18 @@ export const authAPI = {
     const response = await api.get('/auth/guest');
     return response.data;
   },
+
+  // 비밀번호 재설정 요청 (토큰 발급)
+  requestPasswordReset: async (data: { email: string }) => {
+    const response = await api.post('/auth/password-reset/request', data);
+    return response.data;
+  },
+
+  // 비밀번호 재설정 실행
+  executePasswordReset: async (data: { token: string; newPassword: string }) => {
+    const response = await api.post('/auth/password-reset', data);
+    return response.data;
+  },
 };
 
 // 사용자 관련 API

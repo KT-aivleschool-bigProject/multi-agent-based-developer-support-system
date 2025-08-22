@@ -89,18 +89,8 @@ const Register = () => {
       return;
     }
     
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      toast({
-        title: "비밀번호 오류",
-        description: passwordValidation.message,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const success = await register(name, email, password, position);
-    if (success) {
+    const result = await register(name, email, password, position);
+    if (result) {
       toast({
         title: "회원가입 성공",
         description: "회원가입이 완료되었습니다. 로그인해주세요.",
@@ -109,7 +99,7 @@ const Register = () => {
     } else {
       toast({
         title: "회원가입 실패",
-        description: "입력 정보를 확인해주세요.",
+        description: "회원가입 중 오류가 발생했습니다. 다시 시도해주세요.",
         variant: "destructive",
       });
     }
