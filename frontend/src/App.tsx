@@ -9,15 +9,12 @@ import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
 import Board from "./pages/Board";
 import BoardNew from "./pages/BoardNew";
 import BoardDetail from "./pages/BoardDetail";
 import BoardEdit from "./pages/BoardEdit";
 import Profile from "./pages/Profile";
 import Calendar from "./pages/Calendar";
-import CodeManagement from "./pages/CodeManagement";
-import TaskManagement from "./pages/TaskManagement";
 import ProjectManagement from "./pages/ProjectManagement";
 import ProjectCreate from "./pages/ProjectCreate";
 import PrivacyConsent from "./pages/PrivacyConsent";
@@ -38,90 +35,91 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/board" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Board />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/board/new" element={
-              <ProtectedRoute>
-                <Layout>
+            <Route
+              path="/board"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Board />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            {/* 문서 작성 페이지: 헤더/푸터 숨김 */}
+            <Route
+              path="/board/new"
+              element={
+                <ProtectedRoute>
                   <BoardNew />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/board/:id" element={
-              <ProtectedRoute>
-                <Layout>
-                  <BoardDetail />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/board/edit/:id" element={
-              <ProtectedRoute>
-                <Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/board/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <BoardDetail />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            {/* 문서 수정 페이지: 헤더/푸터 숨김 */}
+            <Route
+              path="/board/edit/:id"
+              element={
+                <ProtectedRoute>
                   <BoardEdit />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/projects" element={
-              <ProtectedRoute>
-                <Layout>
-                  <ProjectManagement />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/projects/create" element={
-              <ProtectedRoute>
-                <Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ProjectManagement />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            {/* 프로젝트 생성 페이지: 헤더/푸터 숨김 */}
+            <Route
+              path="/projects/create"
+              element={
+                <ProtectedRoute>
                   <ProjectCreate />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/projects/create/:projectId" element={
-              <ProtectedRoute>
-                <Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/projects/create/:projectId"
+              element={
+                <ProtectedRoute>
                   <ProjectCreate />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/calendar" element={
-              <ProtectedRoute>
-                <Layout>
-                  <Calendar />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/code" element={
-              <ProtectedRoute>
-                <Layout>
-                  <CodeManagement />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/tasks" element={
-              <ProtectedRoute>
-                <Layout>
-                  <TaskManagement />
-                </Layout>
-              </ProtectedRoute>
-            } />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Profile />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Calendar />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route path="/privacy-consent" element={<PrivacyConsent />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />

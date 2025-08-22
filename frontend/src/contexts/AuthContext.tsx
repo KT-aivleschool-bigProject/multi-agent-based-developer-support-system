@@ -22,7 +22,8 @@ interface TokenResponse {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string, position: string) => Promise<boolean>;
+  guestLogin: () => Promise<boolean>;
+  register: (name: string, email: string, password: string, position: string, recaptchaToken: string | null) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
   isAuthenticated: boolean;
@@ -141,7 +142,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (refreshToken && isTokenValid(refreshToken)) {
         // Access Token이 만료되었지만 Refresh Token이 유효한 경우
         try {
-          const response = await authAPI.reissue({ refreshToken });
+          const response = await authAPI.reissue({ 
+            refreshToken,
+            accessToken: accessToken || ''
+          });
           const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response;
           
           localStorage.setItem('accessToken', newAccessToken);
@@ -206,11 +210,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
-  const register = async (name: string, email: string, password: string, position: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string, position: string, recaptchaToken: string): Promise<boolean> => {
     setIsLoading(true);
     
     try {
-      await authAPI.signup({ name, email, password, position });
+      await authAPI.signup({ name, email, password, position, recaptchaToken });
       setIsLoading(false);
       return true;
     } catch (error: any) {
@@ -218,6 +222,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
       return false;
     }
+  };
+
+  const guestLogin = async (): Promise<boolean> => {
+    setIsLoading(true);
+    
+    try {
+      const response: TokenResponse = await authAPI.guestLogin();
+      
+      const { accessToken, refreshToken } = response;
+      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      const payload = parseJwt(accessToken);
+      if (payload) {
+        const basicUser = extractBasicUserFromToken(payload);
+        if (basicUser) {
+          const userDetails = await fetchUserDetails(basicUser.userId, basicUser.email, basicUser.role);
+          if (userDetails) {
+            setUser(userDetails);
+            setIsAuthenticated(true);
+            setIsLoading(false);
+            return true;
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Guest login error:', error);
+      setIsLoading(false);
+      return false;
+    }
+    
+    setIsLoading(false);
+    return false;
   };
 
   const logout = async (): Promise<void> => {
@@ -230,6 +267,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(false);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      // 로그아웃 후 메인화면으로 이동
+      window.location.href = '/';
     }
   };
 
@@ -237,6 +276,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ 
       user, 
       login, 
+      guestLogin,
       register, 
       logout, 
       isLoading,

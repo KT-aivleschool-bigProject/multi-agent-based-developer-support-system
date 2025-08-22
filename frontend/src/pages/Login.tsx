@@ -6,46 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Code2, Loader2 } from 'lucide-react';
+import { Code2, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  // 비밀번호 복잡성 검증 함수
+  // 비밀번호 복잡성 검증 제거 - 단순한 길이만 체크
   const validatePassword = (password: string): { isValid: boolean; message: string } => {
-    const hasLetter = /[a-zA-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*_+\-=\[\]{};':"\\|,.<>/?]/.test(password);
-    
-    const typesCount = [hasLetter, hasNumber, hasSpecialChar].filter(Boolean).length;
-    const length = password.length;
-    
-    // 금지된 특수문자 체크
-    const forbiddenChars = /[()<>"';]/.test(password);
-    if (forbiddenChars) {
-      return { isValid: false, message: "금지된 특수문자 ( ) < > \" ' ; 를 사용할 수 없습니다." };
+    if (password.length < 1) {
+      return { isValid: false, message: "비밀번호를 입력해주세요." };
     }
-    
-    // 2종류 조합: 10~16자리
-    if (typesCount === 2) {
-      if (length < 10 || length > 16) {
-        return { isValid: false, message: "2종류 조합 시 10~16자리로 구성해야 합니다." };
-      }
-    }
-    // 3종류 조합: 8~16자리
-    else if (typesCount === 3) {
-      if (length < 8 || length > 16) {
-        return { isValid: false, message: "3종류 조합 시 8~16자리로 구성해야 합니다." };
-      }
-    }
-    // 1종류만 사용
-    else {
-      return { isValid: false, message: "영어, 숫자, 특수문자 중 최소 2종류를 조합해야 합니다." };
-    }
-    
     return { isValid: true, message: "" };
   };
 
@@ -77,7 +51,7 @@ const Login = () => {
         title: "로그인 성공",
         description: "환영합니다!",
       });
-      navigate('/dashboard');
+      navigate('/');
     } else {
       toast({
         title: "로그인 실패",
@@ -116,17 +90,34 @@ const Login = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                disabled={isLoading}
-                minLength={8}
-                maxLength={16}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={isLoading}
+                  minLength={8}
+                  maxLength={16}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (

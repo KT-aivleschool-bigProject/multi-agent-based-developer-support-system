@@ -1,87 +1,50 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { Code2, Users, MessageSquare, Zap, ArrowRight, GitBranch, Bot } from 'lucide-react';
+import { Code2, Users, MessageSquare, Zap, ArrowRight, GitBranch, Bot, Loader2 } from 'lucide-react';
+import Layout from '@/components/Layout';
+import AIAssistant from '@/components/AIAssistant';
+import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, guestLogin } = useAuth();
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
+
+  const handleGuestLogin = async () => {
+    if (isGuestLoading) return;
+    setIsGuestLoading(true);
+    const ok = await guestLogin();
+    setIsGuestLoading(false);
+    if (ok) {
+      toast({ title: '게스트 로그인 성공', description: '게스트 계정으로 로그인되었습니다.' });
+    } else {
+      toast({ title: '게스트 로그인 실패', description: '잠시 후 다시 시도해주세요.', variant: 'destructive' });
+    }
+  };
 
   const features = [
-    {
-      icon: Users,
-      title: "멀티 에이전트 협업",
-      description: "AI 에이전트들과 함께 코드를 작성하고 리뷰받으세요",
-      badge: "AI",
-    },
-    {
-      icon: MessageSquare,
-      title: "실시간 토론",
-      description: "개발자들과 실시간으로 소통하며 문제를 해결하세요",
-      badge: "커뮤니티",
-    },
-    {
-      icon: GitBranch,
-      title: "코드 협업",
-      description: "프로젝트를 공유하고 함께 개발해보세요",
-      badge: "협업",
-    },
-    {
-      icon: Zap,
-      title: "빠른 피드백",
-      description: "즉시 코드 리뷰와 개선 제안을 받아보세요",
-      badge: "효율성",
-    },
+    { icon: Users, title: '멀티 에이전트 협업', description: 'AI 에이전트들과 함께 코드를 작성하고 리뷰받으세요', badge: 'AI' },
+    { icon: MessageSquare, title: '문서 게시판', description: '개발자들과 게시판으로 소통하며 문제를 해결하세요', badge: '커뮤니티' },
+    { icon: GitBranch, title: '코드 협업', description: '프로젝트를 공유하고 함께 개발해보세요', badge: '협업' },
+    { icon: Zap, title: '빠른 피드백', description: '즉시 코드 리뷰와 개선 제안을 받아보세요', badge: '효율성' },
   ];
 
+  // 로그인 후: 메인 전체를 챗봇으로 사용 (헤더/푸터 제외)
   if (user) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <header className="border-b bg-card/50 backdrop-blur-sm">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Code2 className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold">DevCollab</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" asChild>
-                <Link to="/dashboard">대시보드</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/board">게시판</Link>
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1">
-          <div className="container mx-auto px-4 py-12 text-center">
-            <h1 className="text-4xl font-bold mb-4">
-              환영합니다, {user.name}님!
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              멀티 에이전트와 함께하는 개발자 협업 플랫폼
-            </p>
-            <div className="flex justify-center space-x-4">
-              <Button size="lg" asChild>
-                <Link to="/dashboard">
-                  대시보드로 이동
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/board">게시판 둘러보기</Link>
-              </Button>
-            </div>
-          </div>
-        </main>
-      </div>
+      <Layout disableMainScroll>
+        <div className="h-full">
+          <AIAssistant embedded />
+        </div>
+      </Layout>
     );
   }
 
+  // 로그인 전: 기존 랜딩 페이지 유지
   return (
     <div className="min-h-screen flex flex-col gradient-bg">
       <header className="border-b bg-card/50 backdrop-blur-sm">
@@ -93,6 +56,16 @@ const Index = () => {
           <div className="flex items-center space-x-4">
             <Button variant="ghost" asChild>
               <Link to="/login">로그인</Link>
+            </Button>
+            <Button variant="ghost" onClick={handleGuestLogin} disabled={isGuestLoading}>
+              {isGuestLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  게스트 로그인 중...
+                </>
+              ) : (
+                'Guest 로그인'
+              )}
             </Button>
             <Button asChild>
               <Link to="/register">회원가입</Link>
@@ -164,9 +137,7 @@ const Index = () => {
         <section className="container mx-auto px-4 py-16">
           <Card className="gradient-border p-1">
             <div className="bg-card rounded-lg p-12 text-center">
-              <h2 className="text-3xl font-bold mb-4">
-                지금 바로 시작해보세요
-              </h2>
+              <h2 className="text-3xl font-bold mb-4">지금 바로 시작해보세요</h2>
               <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
                 멀티 에이전트와 함께하는 새로운 개발 경험을 체험해보세요.
               </p>
