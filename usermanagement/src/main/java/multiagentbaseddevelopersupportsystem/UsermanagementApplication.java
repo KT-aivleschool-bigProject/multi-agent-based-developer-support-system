@@ -5,6 +5,8 @@ import multiagentbaseddevelopersupportsystem.domain.Role;
 import multiagentbaseddevelopersupportsystem.domain.User;
 import multiagentbaseddevelopersupportsystem.domain.UserRepository;
 
+import java.time.LocalDateTime;
+
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -36,6 +38,7 @@ public class UsermanagementApplication {
                     .name("Guest User")
                     .position("Guest Position")
                     .role(Role.USER)
+                    .passwordChangedAt(LocalDateTime.now())
                     .build());
             }
         };
