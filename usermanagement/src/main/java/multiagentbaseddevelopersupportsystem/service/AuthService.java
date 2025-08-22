@@ -28,6 +28,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final TokenProvider tokenProvider;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserService2 userService2;
     private static final long PASSWORD_EXPIRE_DAYS = 90;
 
     public void signup(SignupCommand command) {
@@ -44,18 +45,33 @@ public class AuthService {
     }
 
     public TokenResponseDto login(LoginCommand command) {
+        User user = userRepository.findByEmail(command.getEmail())
+                .orElseThrow(() -> new BusinessException("존재하지 않는 사용자입니다.", "USER_NOT_FOUND"));
+
+        if (user != null && user.isLocked()) {
+            throw new BusinessException("일정 횟수 이상 로그인에 실패하였습니다. 비밀번호 재설정 이후 진행 가능합니다.", "USER_LOCKED");
+        }
+
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(command.getEmail(), command.getPassword());
 
         Authentication authentication;
         try {
             authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+
+            // 로그인 성공 시 실패 카운트 초기화
+            if (user != null) {
+                user.setLoginFailCount(0);
+                userRepository.save(user);
+            }
+
         } catch (Exception e) {
+            // 로그인 실패 시 카운트 증가 및 잠금 처리 (별도 트랜잭션)
+            if (user != null) {
+                userService2.increaseLoginFailCount(user);
+            }
             throw new BusinessException("이메일 또는 비밀번호가 일치하지 않습니다.", "AUTHENTICATION_FAILED");
         }
-
-        User user = userRepository.findByEmail(command.getEmail())
-                .orElseThrow(() -> new BusinessException("존재하지 않는 사용자입니다.", "USER_NOT_FOUND"));
 
         validatePasswordExpiry(user);
 
@@ -131,6 +147,8 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword)); // 반드시 암호화 필요!
         user.setResetToken(null); // 토큰 제거
         user.setPasswordChangedAt(LocalDateTime.now()); // 비밀번호 변경 시간 기록
+        user.setLocked(false); // 계정 잠금 해제
+        user.setLoginFailCount(0); // 실패 카운트 초기화
         userRepository.save(user);
     }
 
