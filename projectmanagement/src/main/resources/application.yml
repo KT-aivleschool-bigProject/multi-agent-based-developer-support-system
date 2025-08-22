@@ -60,9 +60,12 @@ server:
       max-request-size: 50MB
 
 ---
+server:
+  port: 8080
 
 spring:
   profiles: docker
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${AZURE_MYSQL_URL}
@@ -106,17 +109,33 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
-  management:
-      endpoints:
-        web:
-          exposure:
-            include: "health"
-          base-path: /management  
-      endpoint:
-        health:
-          show-details: when-authorized
-          show-components: when-authorized
-      security:
-        enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health"
+      base-path: /management  
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: when-authorized
+      
+azure:
+  storage:
+    blob:
+      account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
+      account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
+      container-name: ${AZURE_STORAGE_CONTAINER_NAME}
+
+file:
+  storage:
+    type: azure
+    max-file-size: 100MB        
+    allowed-extensions: jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,mp4,avi,mov
+    path-prefix: uploads/       
+    public-access: false       
+    cdn-enabled: true          
+
+ 
 
 
