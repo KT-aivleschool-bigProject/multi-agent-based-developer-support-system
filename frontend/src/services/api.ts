@@ -16,8 +16,10 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     const user = localStorage.getItem('user');
+    const url = config.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/signup') || url.includes('/auth/reissue') || url.includes('/auth/guest');
     
-    if (token) {
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     
@@ -50,26 +52,29 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       
       const refreshToken = localStorage.getItem('refreshToken');
+      const accessToken = localStorage.getItem('accessToken'); // 만료된 accessToken도 가져오기
+      
       if (refreshToken) {
         try {
           const response = await api.post('/auth/reissue', {
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            accessToken: accessToken  // 만료된 accessToken도 함께 전송
           });
           
-          const { accessToken, refreshToken: newRefreshToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data;
+          localStorage.setItem('accessToken', newAccessToken);
           if (newRefreshToken) {
             localStorage.setItem('refreshToken', newRefreshToken);
           }
           
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return api(originalRequest);
         } catch (refreshError) {
           // 리프레시 토큰도 만료된 경우 로그아웃
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           localStorage.removeItem('user');
-          window.location.href = '/login';
+          window.location.href = '/'; // 메인화면으로 리다이렉트
         }
       }
     }
@@ -86,6 +91,8 @@ export const authAPI = {
     password: string;
     name: string;
     position: string;
+    recaptchaToken: string | null;
+
   }) => {
     const response = await api.post('/auth/signup', data);
     return response.data;
@@ -104,8 +111,14 @@ export const authAPI = {
   },
 
   // 토큰 재발급
-  reissue: async (data: { refreshToken: string }) => {
+  reissue: async (data: { refreshToken: string; accessToken?: string }) => {
     const response = await api.post('/auth/reissue', data);
+    return response.data;
+  },
+
+  // 게스트 로그인
+  guestLogin: async () => {
+    const response = await api.get('/auth/guest');
     return response.data;
   },
 };
@@ -122,12 +135,6 @@ export const userAPI = {
   getProfile: async () => {
     const response = await api.get('/users/me');
     return response.data;
-  },
-
-  // 사용자 정보 수정 (임시 비활성화)
-  updateProfile: async (data: any) => {
-    // TODO: 백엔드에서 프로필 수정 API 구현 필요
-    throw new Error('프로필 수정 기능이 아직 구현되지 않았습니다.');
   },
 };
 
@@ -216,17 +223,26 @@ export const commentAPI = {
 // 첨부파일 관련 API
 export const attachmentAPI = {
   // 프로젝트 생성 중 파일 업로드
-  uploadFileCreatingProject: async (file: File, projectId: number) => {
+  uploadFileCreatingProject: async (file: Blob | File, projectId: number, filename?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    // filename 제공 시 명시적으로 파일명 설정
+    if (filename) {
+      formData.append('file', file, filename);
+    } else {
+      formData.append('file', file as any);
+    }
     formData.append('projectId', projectId.toString());
     const response = await api.post('/attachments/uploadcreatingproject', formData);
     return response.data;
   },
   // 파일 업로드
-  uploadFile: async (file: File, postId: number) => {
+  uploadFile: async (file: Blob | File, postId: number, filename?: string) => {
     const formData = new FormData();
-    formData.append('file', file);
+    if (filename) {
+      formData.append('file', file, filename);
+    } else {
+      formData.append('file', file as any);
+    }
     formData.append('postId', postId.toString());
     
     const response = await api.post('/attachments/upload', formData, {
@@ -254,6 +270,12 @@ export const attachmentAPI = {
   // 파일 삭제
   deleteFile: async (fileId: number) => {
     const response = await api.delete(`/attachments/${fileId}`);
+    return response.data;
+  },
+
+  // AI 문서 생성 (DocAgent)
+  generateDocument: async (fileId: number) => {
+    const response = await api.post(`/attachments/docagent/${fileId}`);
     return response.data;
   },
 };
