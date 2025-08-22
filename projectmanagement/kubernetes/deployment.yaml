@@ -16,12 +16,28 @@ spec:
     spec:
       containers:
         - name: projectmanagement
-          image: "username/projectmanagement:latest"
+          image: "bigproject.azurecr.io/projectmanagement:v1"
+          env:
+            - name: AZURE_MYSQL_URL
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: url
+            - name: AZURE_MYSQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: username
+            - name: AZURE_MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-credentials
+                  key: password
           ports:
             - containerPort: 8080
           readinessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/management/health'
               port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2
@@ -29,7 +45,7 @@ spec:
             failureThreshold: 10
           livenessProbe:
             httpGet:
-              path: '/actuator/health'
+              path: '/management/health'
               port: 8080
             initialDelaySeconds: 15
             timeoutSeconds: 2
