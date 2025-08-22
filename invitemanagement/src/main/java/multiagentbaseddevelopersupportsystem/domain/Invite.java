@@ -18,7 +18,7 @@ import multiagentbaseddevelopersupportsystem.domain.Teamapproved;
 public class Invite {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long inviteId;
 
     private Long projectId;
