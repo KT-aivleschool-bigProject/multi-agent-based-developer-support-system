@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import lombok.Data;
@@ -58,13 +59,20 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public static User toEntity(SignupCommand cmd, PasswordEncoder encoder) {
+    @Column(name = "reset_token", length = 36)
+    private String resetToken;
+
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
+    public static User toEntity(SignupCommand cmd, BCryptPasswordEncoder encoder) {
         return User.builder()
                 .email(cmd.getEmail())
                 .password(encoder.encode(cmd.getPassword()))
                 .name(cmd.getName())
                 .position(cmd.getPosition())
                 .role(Role.USER)
+                .passwordChangedAt(LocalDateTime.now())
                 .build();
     }
 
