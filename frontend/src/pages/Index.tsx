@@ -79,8 +79,8 @@ const Index = () => {
     return (
       <Layout disableMainScroll>
         <div className="h-full flex flex-col">
-          {/* AI 챗봇 대화창 - 스크롤 가능 */}
-          <div className="flex-1 overflow-y-auto p-4 pb-0">
+          {/* AI 챗봇 대화창 - 전체 공간 사용 */}
+          <div className="h-full">
             <AIAssistant embedded />
           </div>
         </div>

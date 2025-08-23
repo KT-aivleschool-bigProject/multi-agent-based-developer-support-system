@@ -183,10 +183,13 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
 
   const Bubble: React.FC<{ msg: Message }> = ({ msg }) => {
     const isUser = msg.sender === 'user';
-    const bubbleMaxWidth = embedded ? 'max-w-full' : 'max-w-[85%]';
+    // embedded 모드에서는 전체 너비 사용, 일반 모드에서는 반응형 최대 너비 설정
+    const bubbleMaxWidth = embedded 
+      ? 'max-w-full' 
+      : 'max-w-[95%] xs:max-w-[90%] sm:max-w-[85%] md:max-w-[80%] lg:max-w-[75%] xl:max-w-[70%]';
     
     return (
-      <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+      <div className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full`}>
         {msg.sender === 'ai' && (
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
             <Bot className="h-4 w-4 text-primary-foreground" />
@@ -197,7 +200,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
             isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'
           }`}
         >
-          <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p>
+          <p className="text-sm whitespace-pre-wrap break-words overflow-hidden leading-relaxed word-break-keep-all">
+            {msg.text}
+          </p>
           
           {/* 첨부파일 표시 */}
           {msg.attachments && msg.attachments.length > 0 && (
@@ -227,109 +232,104 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
 
   const Panel = (
     <div className="w-full h-full flex flex-col">
-      <div className="px-2 pb-2">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Bot className="h-4 w-4" /> AI 어시스턴트
+      {/* 대화 내용 영역 - 스크롤 가능 */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="p-4 pb-20 max-w-full">
+          {messages.map((m) => (
+            <Bubble key={m.id} msg={m} />
+          ))}
+          <div ref={endRef} />
+          {sending && <div className="text-xs opacity-70 mt-2">응답 생성 중…</div>}
         </div>
-        <div className="text-xs text-muted-foreground">개발 관련 질문이나 업무에 대해 도움을 받아보세요.</div>
-      </div>
-      <div className="flex-1 flex flex-col min-h-0 mb-4">
-        <ScrollArea className={embedded ? 'flex-1 p-4 pb-0' : 'flex-1 rounded-md border p-3'}>
-          <div className="flex flex-col">
-            {messages.map((m) => (
-              <Bubble key={m.id} msg={m} />
-            ))}
-            <div ref={endRef} />
-            {sending && <div className="text-xs opacity-70 mt-2">응답 생성 중…</div>}
-          </div>
-        </ScrollArea>
       </div>
       
       {/* 입력창 영역 - 하단 고정 */}
-      <div className="flex-shrink-0 border-t bg-background p-4 rounded-lg">
-        {!isAuthenticated ? (
-          <div className="text-sm text-muted-foreground">
-            AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {/* 첨부파일 표시 영역 */}
-            {attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {attachments.map((file, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{file.name}</span>
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 z-10">
+        <div className="max-w-4xl mx-auto w-full">
+          {!isAuthenticated ? (
+            <div className="text-sm text-muted-foreground text-center">
+              AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* 첨부파일 표시 영역 */}
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{file.name}</span>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => removeAttachment(index)}
+                        className="ml-auto h-auto p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* 입력창과 버튼 */}
+              <div className="flex gap-2 items-end">
+                <div className="flex-1 relative min-w-0">
+                  <Textarea
+                    ref={textareaRef}
+                    placeholder="메시지를 입력하세요..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="pr-10 resize-none min-h-[40px] max-h-[120px] overflow-y-auto w-full"
+                    rows={1}
+                    style={{
+                      height: '40px',
+                      minHeight: '40px',
+                      maxHeight: '120px'
+                    }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                    }}
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                    onChange={(e) => handleFileSelect(e.target.files)}
+                    className="hidden"
+                    id="file-input"
+                  />
+                  <label htmlFor="file-input">
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => removeAttachment(index)}
-                      className="ml-auto h-auto p-1"
+                      asChild
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
                     >
-                      <X className="h-3 w-3" />
+                      <span className="cursor-pointer">
+                        <Upload className="h-4 w-4" />
+                      </span>
                     </Button>
-                  </div>
-                ))}
+                  </label>
+                </div>
+                <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-            
-            {/* 입력창과 버튼 */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 relative">
-                <Textarea
-                  ref={textareaRef}
-                  placeholder="메시지를 입력하세요..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="pr-10 resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
-                  rows={1}
-                  style={{
-                    height: '40px',
-                    minHeight: '40px',
-                    maxHeight: '120px'
-                  }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                  }}
-                />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                  className="hidden"
-                  id="file-input"
-                />
-                <label htmlFor="file-input">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    asChild
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-                  >
-                    <span className="cursor-pointer">
-                      <Upload className="h-4 w-4" />
-                    </span>
-                  </Button>
-                </label>
-              </div>
-              <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
-                <Send className="h-4 w-4" />
-              </Button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
 
   if (embedded) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col relative overflow-hidden">
         {Panel}
       </div>
     );
