@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Bot, Calendar, FileText, FolderPlus } from 'lucide-react';
+import { Menu, X, Bot, Calendar, FileText, FolderPlus, FileCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MenuButton = () => {
@@ -12,6 +12,7 @@ const MenuButton = () => {
     { icon: Calendar, label: '캘린더', path: '/calendar' },
     { icon: FileText, label: '문서 게시판', path: '/board' },
     { icon: FolderPlus, label: '프로젝트 생성', path: '/projects' },
+    { icon: FileCode, label: 'Swagger', path: '/swagger' },
   ];
 
   const handleMenuClick = (path: string) => {

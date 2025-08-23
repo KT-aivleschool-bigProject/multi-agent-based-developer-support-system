@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,9 @@ import { toast } from '@/hooks/use-toast';
 const Index = () => {
   const { user, guestLogin } = useAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleGuestLogin = async () => {
     if (isGuestLoading) return;
@@ -37,12 +40,49 @@ const Index = () => {
     { icon: Zap, title: '빠른 피드백', description: '즉시 코드 리뷰와 개선 제안을 받아보세요', badge: '효율성' },
   ];
 
+  // 파일 선택 처리
+  const handleFileSelect = (files: FileList | null) => {
+    if (!files) return;
+    
+    const newFiles = Array.from(files);
+    setAttachments(prev => [...prev, ...newFiles]);
+    
+    // 토스트 알림
+    newFiles.forEach(file => {
+      toast({
+        title: "파일 업로드 완료",
+        description: `${file.name}이 업로드되었습니다.`,
+      });
+    });
+  };
+
+  // 파일 제거
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // 메시지 전송
+  const handleSendMessage = () => {
+    const value = input.trim();
+    if (!value && attachments.length === 0) return;
+
+    // 여기에 실제 메시지 전송 로직 구현
+    console.log('메시지 전송:', value, attachments);
+    
+    // 입력창 초기화
+    setInput('');
+    setAttachments([]);
+  };
+
   // 로그인 후: 메인 전체를 챗봇으로 사용 (헤더/푸터 제외)
   if (user) {
     return (
       <Layout disableMainScroll>
-        <div className="h-full">
-          <AIAssistant embedded />
+        <div className="h-full flex flex-col">
+          {/* AI 챗봇 대화창 - 전체 공간 사용 */}
+          <div className="h-full">
+            <AIAssistant embedded />
+          </div>
         </div>
       </Layout>
     );
