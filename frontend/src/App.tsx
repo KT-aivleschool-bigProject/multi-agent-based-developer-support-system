@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Calendar from "./pages/Calendar";
 import ProjectManagement from "./pages/ProjectManagement";
 import ProjectCreate from "./pages/ProjectCreate";
+import Swagger from "./pages/Swagger";
 import PrivacyConsent from "./pages/PrivacyConsent";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
@@ -118,6 +119,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Calendar />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/swagger"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Swagger />
                   </Layout>
                 </ProtectedRoute>
               }
