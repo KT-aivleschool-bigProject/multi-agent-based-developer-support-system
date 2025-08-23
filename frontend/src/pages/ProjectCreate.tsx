@@ -60,9 +60,10 @@ const ProjectCreate = () => {
     setCurrentStep(2);
   };
   const handleAll = async () => {
+    await uploadAllFiles(attachedFiles, Number(projectId));
     await handleProjectCreate();
     await handleInviteMembers(Number(projectId), teamData.members.map(member => member.email));
-    await uploadAllFiles(attachedFiles, Number(projectId));
+    
   };
   const handleProjectCreate = async () => {
     if (!projectData.name || !projectData.description) {
