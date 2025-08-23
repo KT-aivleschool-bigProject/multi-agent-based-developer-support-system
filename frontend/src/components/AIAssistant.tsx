@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Bot, Send, Upload, FileText, X } from 'lucide-react';
+import { Bot, Send } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/services/api';
@@ -23,7 +23,6 @@ interface Message {
   text: string;
   sender: Sender;
   timestamp: Date;
-  attachments?: File[];
 }
 
 interface AIAssistantProps {
@@ -46,9 +45,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [attachments, setAttachments] = useState<File[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 스크롤을 항상 최신 메시지로 이동
@@ -64,26 +61,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
     }
   };
 
-  // 파일 선택 처리
-  const handleFileSelect = (files: FileList | null) => {
-    if (!files) return;
-    
-    const newFiles = Array.from(files);
-    setAttachments(prev => [...prev, ...newFiles]);
-    
-    // 토스트 알림
-    newFiles.forEach(file => {
-      toast({
-        title: "파일 업로드 완료",
-        description: `${file.name}이 업로드되었습니다.`,
-      });
-    });
-  };
 
-  // 파일 제거
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
-  };
 
   // 입력창 높이 초기화
   const resetTextareaHeight = () => {
@@ -94,24 +72,17 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
 
   const handleSendMessage = async () => {
     const value = input.trim();
-    if (!value && attachments.length === 0) return;
+    if (!value) return;
 
     // 1) 사용자 메시지를 먼저 UI에 추가
-    let messageText = value;
-    if (attachments.length > 0) {
-      messageText += attachments.map(file => ` [첨부파일: ${file.name}]`).join('');
-    }
-
     const userMsg: Message = {
       id: Date.now(),
-      text: messageText,
+      text: value,
       sender: 'user',
       timestamp: new Date(),
-      attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setAttachments([]);
     setSending(true);
     
     // 입력창 높이 초기화
@@ -204,19 +175,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
             {msg.text}
           </p>
           
-          {/* 첨부파일 표시 */}
-          {msg.attachments && msg.attachments.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {msg.attachments.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs bg-black/10 rounded px-2 py-1">
-                  <FileText className="h-3 w-3" />
-                  <span className="truncate">{file.name}</span>
-                  <span className="text-xs opacity-70">({(file.size / 1024).toFixed(1)}KB)</span>
-                </div>
-              ))}
-            </div>
-          )}
-          
           <p className="text-xs opacity-70 mt-1">
             {msg.timestamp.toLocaleTimeString()}
           </p>
@@ -252,26 +210,6 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
             </div>
           ) : (
             <div className="space-y-2">
-              {/* 첨부파일 표시 영역 */}
-              {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{file.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeAttachment(index)}
-                        className="ml-auto h-auto p-1"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
               {/* 입력창과 버튼 */}
               <div className="flex gap-2 items-end">
                 <div className="flex-1 relative min-w-0">
@@ -294,29 +232,9 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
                       target.style.height = Math.min(target.scrollHeight, 120) + 'px';
                     }}
                   />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                    onChange={(e) => handleFileSelect(e.target.files)}
-                    className="hidden"
-                    id="file-input"
-                  />
-                  <label htmlFor="file-input">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      asChild
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
-                    >
-                      <span className="cursor-pointer">
-                        <Upload className="h-4 w-4" />
-                      </span>
-                    </Button>
-                  </label>
+
                 </div>
-                <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
+                <Button onClick={handleSendMessage} size="sm" disabled={sending || !input.trim()}>
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
