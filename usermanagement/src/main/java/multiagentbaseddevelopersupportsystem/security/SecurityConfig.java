@@ -39,7 +39,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class) 
                 .authorizeRequests()
-                .antMatchers("/auth/signup", "/auth/login", "/auth/reissue", "/users/{userId}", "/auth/password-reset").permitAll()
+                .antMatchers("/auth/signup", "/auth/login", "/auth/reissue", "/users/{userId}", "/auth/password-reset/**", "/auth/guest").permitAll()
                 .antMatchers("/h2-console/**").permitAll() 
                 .antMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll() 
                 .antMatchers("/management/**", "/actuator/**").permitAll() 
