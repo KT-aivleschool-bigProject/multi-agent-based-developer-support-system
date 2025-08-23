@@ -265,8 +265,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      
+      // 애플리케이션 토큰 삭제
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+
+      // 구글 캘린더 토큰 삭제
+      localStorage.removeItem('google_calendar_tokens');
+
       // 로그아웃 후 메인화면으로 이동
       window.location.href = '/';
     }
