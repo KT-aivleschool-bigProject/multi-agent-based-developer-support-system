@@ -11,8 +11,6 @@ import javax.transaction.Transactional;
 import multiagentbaseddevelopersupportsystem.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.ResponseEntity;
 
 //<<< Clean Arch / Inbound Adaptor
@@ -56,20 +54,24 @@ public class ProjectManagementController {
         }
 
         ProjectManagement projectManagement = optionalProject.get();
-
-        // CreateProjectCommand 생성
-        CreateProjectCommand createProjectCommand = new CreateProjectCommand();
-        createProjectCommand.setProjectName(projectName);
-        createProjectCommand.setProjectDescription(projectDescription);
-        createProjectCommand.setGithubUrl(githubUrl);
-        createProjectCommand.setProjectStatus(ProjectStatus.valueOf("TEAM_BUILDING"));
-        createProjectCommand.setInviteEmails(inviteEmails);
-
-        // 도메인 로직 호출 (ProjectCreated 이벤트 발행)
-        projectManagement.createProject(createProjectCommand);
         
+        // CreateProjectCommand 생성
+        projectManagement.setProjectName(projectName);
+        projectManagement.setProjectDescription(projectDescription);
+        projectManagement.setGithubUrl(githubUrl);
+        projectManagement.setProjectStatus(ProjectStatus.valueOf("TEAM_BUILDING"));
+
         // 영속화
         projectManagementRepository.save(projectManagement);
+       
+        // 도메인 로직 호출 (ProjectCreated 이벤트 발행)
+        ProjectCreated projectCreated = new ProjectCreated(projectManagement);
+        projectCreated.publishAfterCommit();
+
+        // 초대 이메일이 있다면 초대 이벤트 발행
+        if (inviteEmails != null && !inviteEmails.isEmpty()) {
+            projectManagement.inviteMembers(inviteEmails);
+        }
 
         return projectManagement;
     }
