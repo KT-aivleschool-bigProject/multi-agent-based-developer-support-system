@@ -23,7 +23,7 @@ spring:
         - id: invitemanagement
           uri: http://localhost:8084
           predicates:
-            - Path=/taskAssignments/**, 
+            - Path=/invites/**, 
         - id: communication
           uri: http://localhost:8085
           predicates:
@@ -113,7 +113,7 @@ spring:
         - id: projectmanagement
           uri: http://projectmanagement:8080
           predicates:
-            - Path=/projectmanagement/**
+            - Path=/projectManagements/**
         - id: schedule
           uri: http://schedule:8080
           predicates:
@@ -144,6 +144,10 @@ spring:
           uri: http://frontend:8080
           predicates:
             - Path=/**
+        - id: invitemanagement
+          uri: http://inviteManagement:8080
+          predicates:
+            - Path=/invites/**, 
       globalcors:
         corsConfigurations:
           '[/**]':
