@@ -267,15 +267,6 @@ const Calendar: React.FC = () => {
     tokenClientRef.current?.requestAccessToken({ prompt: 'consent' });
   };
 
-  const signOut = () => {
-    setAccessToken(null);
-    setUserEmail(null);
-    setCalendarList([]);
-    setSelectedCalendarId('primary');
-    setGoogleEvents([]);
-    GoogleTokenManager.clear(); // 로그아웃 시 토큰 삭제
-  };
-
   // ===== 개인 캘린더: 주간 이벤트 불러오기 (사이드패널 전용) =====
   const fetchGoogleEvents = async () => {
     try {
