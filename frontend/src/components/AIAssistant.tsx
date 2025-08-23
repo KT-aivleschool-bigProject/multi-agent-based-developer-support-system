@@ -233,8 +233,8 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
         </div>
         <div className="text-xs text-muted-foreground">개발 관련 질문이나 업무에 대해 도움을 받아보세요.</div>
       </div>
-      <div className="flex-1 flex flex-col min-h-0">
-        <ScrollArea className={embedded ? 'flex-1 p-4' : 'flex-1 rounded-md border p-3'}>
+      <div className="flex-1 flex flex-col min-h-0 mb-4">
+        <ScrollArea className={embedded ? 'flex-1 p-4 pb-0' : 'flex-1 rounded-md border p-3'}>
           <div className="flex flex-col">
             {messages.map((m) => (
               <Bubble key={m.id} msg={m} />
@@ -243,86 +243,86 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ embedded = false }) => {
             {sending && <div className="text-xs opacity-70 mt-2">응답 생성 중…</div>}
           </div>
         </ScrollArea>
-        
-        {/* 입력창 영역 */}
-        <div className="mt-3 px-2 pb-4">
-          {!isAuthenticated ? (
-            <div className="text-sm text-muted-foreground">
-              AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* 첨부파일 표시 영역 */}
-              {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{file.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeAttachment(index)}
-                        className="ml-auto h-auto p-1"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {/* 입력창과 버튼 */}
-              <div className="flex gap-2 items-end">
-                <div className="flex-1 relative">
-                  <Textarea
-                    ref={textareaRef}
-                    placeholder="메시지를 입력하세요..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="pr-10 resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
-                    rows={1}
-                    style={{
-                      height: '40px',
-                      minHeight: '40px',
-                      maxHeight: '120px'
-                    }}
-                    onInput={(e) => {
-                      const target = e.target as HTMLTextAreaElement;
-                      target.style.height = 'auto';
-                      target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                    }}
-                  />
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
-                    onChange={(e) => handleFileSelect(e.target.files)}
-                    className="hidden"
-                    id="file-input"
-                  />
-                  <label htmlFor="file-input">
+      </div>
+      
+      {/* 입력창 영역 - 하단 고정 */}
+      <div className="flex-shrink-0 border-t bg-background p-4 rounded-lg">
+        {!isAuthenticated ? (
+          <div className="text-sm text-muted-foreground">
+            AI 어시스턴트를 사용하려면 <a href="/login" className="underline">로그인</a> 해주세요.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {/* 첨부파일 표시 영역 */}
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{file.name}</span>
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      asChild
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                      onClick={() => removeAttachment(index)}
+                      className="ml-auto h-auto p-1"
                     >
-                      <span className="cursor-pointer">
-                        <Upload className="h-4 w-4" />
-                      </span>
+                      <X className="h-3 w-3" />
                     </Button>
-                  </label>
-                </div>
-                <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
-                  <Send className="h-4 w-4" />
-                </Button>
+                  </div>
+                ))}
               </div>
+            )}
+            
+            {/* 입력창과 버튼 */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 relative">
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="메시지를 입력하세요..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="pr-10 resize-none min-h-[40px] max-h-[120px] overflow-y-auto"
+                  rows={1}
+                  style={{
+                    height: '40px',
+                    minHeight: '40px',
+                    maxHeight: '120px'
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                  }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                  className="hidden"
+                  id="file-input"
+                />
+                <label htmlFor="file-input">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    asChild
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                  >
+                    <span className="cursor-pointer">
+                      <Upload className="h-4 w-4" />
+                    </span>
+                  </Button>
+                </label>
+              </div>
+              <Button onClick={handleSendMessage} size="sm" disabled={sending || (!input.trim() && attachments.length === 0)}>
+                <Send className="h-4 w-4" />
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
