@@ -21,7 +21,7 @@ interface TokenResponse {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean | "USER_LOCKED">;
   guestLogin: () => Promise<boolean>;
   register: (name: string, email: string, password: string, position: string, recaptchaToken: string | null) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -177,26 +177,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean | "USER_LOCKED"> => {
     setIsLoading(true);
     
     try {
-      const response: TokenResponse = await authAPI.login({ email, password });
+      const response = await authAPI.login({ email, password });
       
-      const { accessToken, refreshToken } = response;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      
-      const payload = parseJwt(accessToken);
-      if (payload) {
-        const basicUser = extractBasicUserFromToken(payload);
-        if (basicUser) {
-          const userDetails = await fetchUserDetails(basicUser.userId, basicUser.email, basicUser.role);
-          if (userDetails) {
-            setUser(userDetails);
-            setIsAuthenticated(true);
-            setIsLoading(false);
-            return true;
+      // USER_LOCKED 코드가 오면 특별 처리
+      if (response && typeof response === 'object' && 'code' in response && response.code === "USER_LOCKED") {
+        setIsLoading(false);
+        return "USER_LOCKED";
+      }
+      if (response.success && response.data) {
+        const { accessToken, refreshToken } = response.data as TokenResponse;
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        const payload = parseJwt(accessToken);
+        if (payload) {
+          const basicUser = extractBasicUserFromToken(payload);
+          if (basicUser) {
+            const userDetails = await fetchUserDetails(basicUser.userId, basicUser.email, basicUser.role);
+            if (userDetails) {
+              setUser(userDetails);
+              setIsAuthenticated(true);
+              setIsLoading(false);
+              return true;
+            }
           }
         }
       }
