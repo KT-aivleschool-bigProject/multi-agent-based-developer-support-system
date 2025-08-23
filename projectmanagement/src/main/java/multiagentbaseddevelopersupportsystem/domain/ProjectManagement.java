@@ -14,7 +14,7 @@ import multiagentbaseddevelopersupportsystem.ProjectmanagementApplication;
 public class ProjectManagement {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long projectId;
 
     private String projectName;

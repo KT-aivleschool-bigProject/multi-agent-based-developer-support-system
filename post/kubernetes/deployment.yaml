@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: post
-          image: "bigproject.azurecr.io/post:v2"
+          image: "bigproject.azurecr.io/post:prod"
           env:
             - name: AZURE_MYSQL_URL
               valueFrom:
