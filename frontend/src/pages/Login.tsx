@@ -28,7 +28,20 @@ const Login = () => {
     }
     
     const result = await login(email, password);
-    if (result) {
+
+    // result가 false면 일반 실패
+    // result가 특정 에러코드(예: USER_LOCKED)를 반환하면 계정 잠금
+    if (typeof result === "string" && result === "USER_LOCKED") {
+      toast({
+        title: "로그인 실패",
+        description: "일정 횟수 이상 로그인에 실패하였습니다. 비밀번호 재설정 이후 진행 가능합니다.",
+        variant: "destructive",
+      });
+      navigate('/password-reset');
+      return;
+    }
+
+    if (result === true) {
       toast({
         title: "로그인 성공",
         description: "환영합니다!",
