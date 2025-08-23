@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: gateway
-          image: bigproject.azurecr.io/gateway:v3
+          image: bigproject.azurecr.io/gateway:prod
           ports:
             - containerPort: 8080
           env:

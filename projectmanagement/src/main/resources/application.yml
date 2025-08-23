@@ -114,9 +114,7 @@ spring:
           base-path: /management  
       endpoint:
         health:
-          show-details: when-authorized
-          show-components: when-authorized
-      security:
-        enabled: true
+          show-details: always
+     
 
 

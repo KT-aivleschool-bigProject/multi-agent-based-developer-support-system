@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: projectmanagement
-          image: "bigproject.azurecr.io/projectmanagement:v1"
+          image: "bigproject.azurecr.io/projectmanagement:prod"
           env:
             - name: AZURE_MYSQL_URL
               valueFrom:

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: comment
-          image: "bigproject.azurecr.io/comment:v3"
+          image: "bigproject.azurecr.io/comment:prod"
           env:
             - name: AZURE_MYSQL_URL
               valueFrom:
