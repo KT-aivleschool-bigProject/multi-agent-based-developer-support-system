@@ -11,15 +11,20 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, disableMainScroll = false }) => {
 	return (
-		<div className="h-screen w-full bg-background flex flex-col overflow-hidden">
-			<div className="shrink-0">
+		<div className="min-h-screen w-full bg-background flex flex-col">
+			<div className="fixed top-0 left-0 right-0 z-40 bg-background border-b">
 				<Header />
 			</div>
-			<main className={`flex-1 ${disableMainScroll ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-				{children}
-			</main>
-			<div className="shrink-0">
-				<Footer />
+			<div className="pt-16 flex-1 flex flex-col">
+				<main className={`flex-1 ${disableMainScroll ? 'overflow-hidden' : ''}`}>
+					{children}
+				</main>
+				{/* disableMainScroll이 true일 때는 푸터를 숨김 */}
+				{!disableMainScroll && (
+					<div className="shrink-0 mt-auto">
+						<Footer />
+					</div>
+				)}
 			</div>
 			<div className="fixed bottom-4 right-4 z-50">
 				<MenuButton />

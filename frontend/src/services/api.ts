@@ -298,6 +298,12 @@ export const attachmentAPI = {
     const response = await api.post(`/attachments/docagent/${fileId}`);
     return response.data;
   },
+
+  // Swagger YAML 조회
+  getSwaggerYaml: async () => {
+    const response = await api.get('/attachments/swaggeryaml');
+    return response.data;
+  },
 };
 
 // Agent 관련 API
