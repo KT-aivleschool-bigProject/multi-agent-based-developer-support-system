@@ -19,9 +19,12 @@ const Layout: React.FC<LayoutProps> = ({ children, disableMainScroll = false }) 
 				<main className={`flex-1 ${disableMainScroll ? 'overflow-hidden' : ''}`}>
 					{children}
 				</main>
-				<div className="shrink-0 mt-auto">
-					<Footer />
-				</div>
+				{/* disableMainScroll이 true일 때는 푸터를 숨김 */}
+				{!disableMainScroll && (
+					<div className="shrink-0 mt-auto">
+						<Footer />
+					</div>
+				)}
 			</div>
 			<div className="fixed bottom-4 right-4 z-50">
 				<MenuButton />
