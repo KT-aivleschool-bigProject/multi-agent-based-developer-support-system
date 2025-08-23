@@ -100,8 +100,16 @@ export const authAPI = {
 
   // 로그인
   login: async (data: { email: string; password: string }) => {
-    const response = await api.post('/auth/login', data);
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', data);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return {
+        success: false,
+        code: error?.response?.data?.errorCode || null,
+        message: error?.response?.data?.message || error.message,
+      };
+    }
   },
 
   // 로그아웃
