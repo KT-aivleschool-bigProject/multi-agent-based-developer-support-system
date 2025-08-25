@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Code2, Users, MessageSquare, Zap, ArrowRight, GitBranch, Bot, Loader2 } from 'lucide-react';
 import Layout from '@/components/Layout';
 import AIAssistant from '@/components/AIAssistant';
+import Footer from '@/components/Footer';
 import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -196,11 +197,7 @@ const Index = () => {
         </section>
       </main>
 
-      <footer className="border-t bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
-          <p>&copy; 2024 DevCollab. All rights reserved.</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
