@@ -458,12 +458,8 @@ const Calendar: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex flex-wrap items-center gap-3">
-          {!accessToken ? (
+          {!accessToken && (
             <Button onClick={signIn}>Google 로그인</Button>
-          ) : (
-            <>
-              <span className="text-sm text-muted-foreground">로그인: {userEmail ?? '(알 수 없음)'}</span>
-            </>
           )}
         </div>
         <h1 className="text-3xl font-bold mt-4 mb-2">캘린더</h1>
