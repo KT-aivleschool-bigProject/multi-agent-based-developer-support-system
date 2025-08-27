@@ -35,7 +35,7 @@ spring:
         - id: schedule
           uri: http://localhost:8086
           predicates:
-            - Path=/calendars/**, 
+            - Path=/schedule/**, 
         - id: notification
           uri: http://localhost:8087
           predicates:
@@ -113,11 +113,11 @@ spring:
         - id: projectmanagement
           uri: http://projectmanagement:8080
           predicates:
-            - Path=/projectManagements/**
+            - Path=/projectmanagements/**
         - id: schedule
           uri: http://schedule:8080
           predicates:
-            - Path=/calendars/**, 
+            - Path=/schedule/**, 
         - id: notification
           uri: http://notification:8080
           predicates:
