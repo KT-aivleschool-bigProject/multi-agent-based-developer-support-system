@@ -1,10 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  annotations:
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   name: gateway-ingress
   namespace: default
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # ClusterIssuer 이름
 spec:
   ingressClassName: nginx    # 🔥 중요: 명시적으로 ingress class 지정
   tls:
