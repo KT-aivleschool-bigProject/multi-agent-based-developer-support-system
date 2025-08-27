@@ -35,7 +35,7 @@ spring:
         - id: schedule
           uri: http://localhost:8086
           predicates:
-            - Path=/schedule/**, 
+            - Path=/calendars/**, 
         - id: notification
           uri: http://localhost:8087
           predicates:
@@ -117,7 +117,7 @@ spring:
         - id: schedule
           uri: http://schedule:8080
           predicates:
-            - Path=/schedule/**, 
+            - Path=/calendars/**, 
         - id: notification
           uri: http://notification:8080
           predicates:
@@ -145,9 +145,9 @@ spring:
           predicates:
             - Path=/**
         - id: invitemanagement
-          uri: http://inviteManagement:8080
+          uri: http://invitemanagement:8080
           predicates:
-            - Path=/invites/**, 
+            - Path=/invitemanagement/**,/invites/** 
       globalcors:
         corsConfigurations:
           '[/**]':

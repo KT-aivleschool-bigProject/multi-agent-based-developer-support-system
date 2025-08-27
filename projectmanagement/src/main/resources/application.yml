@@ -106,15 +106,17 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
-  management:
-      endpoints:
-        web:
-          exposure:
-            include: "health"
-          base-path: /management  
-      endpoint:
-        health:
-          show-details: always
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+      base-path: /management
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true  
      
 
 
