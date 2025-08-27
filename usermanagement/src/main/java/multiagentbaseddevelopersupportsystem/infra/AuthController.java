@@ -30,7 +30,7 @@ public class AuthController {
             return ResponseEntity.badRequest().build();
         }
         RestTemplate restTemplate = new RestTemplate();
-        String verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=6Le2Ta4rAAAAAHcix0JBDwjgDDn6pxenW49ktm-Z&response=" + command.getRecaptchaToken();
+        String verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret=6Lc44bQrAAAAAP8k5ye7k6G0eYVmKPdf9pBIiZdH&response=" + command.getRecaptchaToken();
         Map response = restTemplate.postForObject(verifyUrl, null, Map.class);
         if (response == null || !(Boolean) response.get("success")) {
             return ResponseEntity.badRequest().build();
