@@ -68,6 +68,9 @@ public class PostService {
     public void checkBeforeEditing(Long userId, Long postId) {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new RuntimeException("No Entity Found"));
+        if(post.getUserId() == null) {
+            return;
+        }
         if (post.getUserId() != userId) {
             throw new RuntimeException("You are not authorized to edit this post.");
         }
