@@ -1,11 +1,15 @@
-FROM webratio/nodejs-http-server
-
-VOLUME /tmp
-ADD dist /opt/www
-ADD run.sh /opt/run.sh
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN npm run build   # dist/
+
+FROM node:20-alpine
+RUN npm i -g serve
+WORKDIR /app
+COPY --from=build /app/dist ./dist
 EXPOSE 8080
-ENTRYPOINT ["sh","/opt/run.sh" ]
+CMD ["serve","-s","dist","-l","8080"]
