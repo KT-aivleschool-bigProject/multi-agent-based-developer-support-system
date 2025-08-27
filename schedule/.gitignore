@@ -45,4 +45,4 @@ node_modules
 .dist/
 .pem
 
-schedule/src/main/resources/application-oauth.yml
+/src/main/resources/application-oauth.yml
