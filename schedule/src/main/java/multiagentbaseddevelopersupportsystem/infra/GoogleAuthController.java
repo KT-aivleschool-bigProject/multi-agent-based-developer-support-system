@@ -3,6 +3,7 @@ package multiagentbaseddevelopersupportsystem.infra;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import multiagentbaseddevelopersupportsystem.domain.GoogleCredential;
 import multiagentbaseddevelopersupportsystem.domain.GoogleCredentialRepository;
 import multiagentbaseddevelopersupportsystem.domain.UserDto;
 import multiagentbaseddevelopersupportsystem.service.GoogleCalendarService;
@@ -22,6 +23,8 @@ import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 컨트롤러는 얇게 유지:
@@ -129,16 +132,53 @@ public class GoogleAuthController {
     }
 
     /** 5) 이벤트 조회 (timeMin, timeMax 등 쿼리 파라미터 그대로 위임) */
+    // @GetMapping("/events")
+    // public JsonNode events(
+    //         HttpServletRequest req,
+    //         @RequestParam(defaultValue = "primary") String calendarId,
+    //         @RequestParam Map<String, String> allParams
+    // ) {
+    //     String email = resolveCurrentEmail(req);
+    //     System.out.println("😊😊😊Google Calendar events 요청: email=" + email + ", calendarId=" + calendarId + ", params=" + allParams);
+    //     Set<String> allowedParams = Set.of("timeMin", "timeMax", "maxResults", "singleEvents", "orderBy", "pageToken");
+
+    //     // 허용 파라미터 필터링
+    //     Map<String, String> safeParams = allParams.entrySet().stream()
+    //             .filter(e -> allowedParams.contains(e.getKey()))
+    //             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    //     // timeMin, timeMax 밀리초 제거
+    //     safeParams.computeIfPresent("timeMin", (k, v) -> v.replaceAll("\\.\\d{3}", "") + "Z");
+    //     safeParams.computeIfPresent("timeMax", (k, v) -> v.replaceAll("\\.\\d{3}", "") + "Z");
+
+    //     // maxResults 제한
+    //     safeParams.put("maxResults", String.valueOf(
+    //             Math.min(250, Integer.parseInt(safeParams.getOrDefault("maxResults", "250")))
+    //     ));
+    //     //allParams.remove("calendarId");
+    //     return calendarSvc.listEvents(email, calendarId, safeParams); // **수정**: userId 대신 email을 전달
+    // }
+
+    private final GoogleCalendarService googleCalendarService;
+    private final GoogleCredentialRepository googleCredentialRepository;
+
     @GetMapping("/events")
-    public JsonNode events(
+    public JsonNode getCalendarEvents(
             HttpServletRequest req,
             @RequestParam(defaultValue = "primary") String calendarId,
             @RequestParam Map<String, String> allParams
     ) {
+        // DB에서 accessToken 조회
         String email = resolveCurrentEmail(req);
-        allParams.remove("calendarId");
-        return calendarSvc.listEvents(email, calendarId, allParams); // **수정**: userId 대신 email을 전달
+        GoogleCredential credential = googleCredentialRepository.findByGoogleEmail(email)
+            .orElseThrow(() -> new RuntimeException("구글 인증 정보가 없습니다."));
+        String accessToken = credential.getAccessToken();
+
+        JsonNode jNode = googleCalendarService.getEvents(accessToken, calendarId);
+        System.out.println("😊😊😊Google Calendar events 응답: " + jNode);
+        return jNode;
     }
+
 
     private String extractEmailFromJwt(HttpServletRequest req) {
         try {
