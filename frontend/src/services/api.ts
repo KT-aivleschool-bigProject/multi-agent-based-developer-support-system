@@ -389,4 +389,59 @@ export const projectManagementAPI = {
   },
 };
 
+// 일정관리 관련 API
+/** ---------- 타입 정의 ---------- */
+export type GoogleAuthUrlRes = { url: string };
+export type GoogleAuthStatusRes = { connected: boolean; email?: string };
+export type GoogleCalendarItem = {
+  id: string;
+  summary: string;
+  accessRole?: string;
+  primary?: boolean;
+  backgroundColor?: string;
+};
+export type GoogleEventItem = {
+  id: string;
+  summary?: string;
+  description?: string;
+  location?: string;
+  start?: { dateTime?: string; date?: string; timeZone?: string };
+  end?: { dateTime?: string; date?: string; timeZone?: string };
+};
+export type EventsQuery = {
+  calendarId: string;
+  timeMin: string;
+  timeMax: string;
+  singleEvents?: boolean;
+  orderBy?: 'startTime' | 'updated';
+  maxResults?: number;
+};
+
+export const scheduleGoogleAPI = {
+  // 인증 URL 발급
+  async authUrl(returnTo: string): Promise<GoogleAuthUrlRes> {
+    const { data } = await api.get('/schedule/google/auth/url', { params: { returnTo } });
+    // console.log("/auth/url 응답 결과 : " + data)
+    return data;
+  },
+
+  // 컨트롤러는 /schedule/google/status 이므로 여기도 동일하게
+  async status(): Promise<GoogleAuthStatusRes> {
+    const { data } = await api.get('/schedule/google/status');
+    return data;
+  },
+
+  // 캘린더 목록
+  async calendars(): Promise<GoogleCalendarItem[]> {
+    const { data } = await api.get('/schedule/google/calendars');
+    return data.items ?? []; // 서버가 원본 그대로 프록시한다고 가정
+  },
+
+  // 이벤트 조회
+  async events(params: EventsQuery): Promise<{ items: GoogleEventItem[]; nextPageToken?: string }> {
+    const { data } = await api.get('/schedule/google/events', { params });
+    return data;
+  },
+};
+
 export default api;

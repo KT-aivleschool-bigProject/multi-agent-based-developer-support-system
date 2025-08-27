@@ -35,7 +35,7 @@ spring:
         - id: schedule
           uri: http://localhost:8086
           predicates:
-            - Path=/calendars/**, 
+            - Path=/schedule/**,
         - id: notification
           uri: http://localhost:8087
           predicates:

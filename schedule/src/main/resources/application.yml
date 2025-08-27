@@ -1,19 +1,44 @@
 server:
-  port: 8080
+  port: 8086
+  use-forward-headers: true
 
 spring:
   application:
     name: schedule
----
 
+  # ✅ oauth 프로파일 포함 (공백/리스트 둘 다 OK)
+  profiles:
+    include:
+      - oauth
+      
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+
+# (옵션) usermanagement JWT 파싱용 – usermanagement와 같은 secret을 공유할 때
+jwt:
+  secret: ${JWT_SECRET_KEY}
+  header: Authorization
+  headerPrefix: Bearer
+
+# --- 기본 프로파일 설정 ---
+---
 spring:
   profiles: default
-  jpa:
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-        implicit_naming_strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyComponentPathImpl
+
   cloud:
     stream:
       kafka:
@@ -30,24 +55,16 @@ spring:
       bindings:
         event-in:
           group: schedule
-#<<< EDA / Topic Name
           destination: multiagentbaseddevelopersupportsystem
-#>>> EDA / Topic Name
           contentType: application/json
         event-out:
-#<<< EDA / Topic Name
           destination: multiagentbaseddevelopersupportsystem
-#>>> EDA / Topic Name
           contentType: application/json
 
 logging:
   level:
     org.hibernate.type: trace
     org.springframework.cloud: debug
-
-
-server:
-  port: 8086
 
 ---
 
@@ -80,5 +97,3 @@ spring:
         event-out:
           destination: multiagentbaseddevelopersupportsystem
           contentType: application/json
-
-
