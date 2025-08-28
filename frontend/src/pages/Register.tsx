@@ -264,7 +264,7 @@ const Register = () => {
               </Label>
             </div>
             <ReCAPTCHA
-              sitekey="6Le2Ta4rAAAAAP8UCdOiOAN5dbvl073CBg2UxnAQ" // 테스트 키
+              sitekey="6Lc44bQrAAAAAFjDG4wDZW4_0BS0IzOL_FPvHS-r" // 테스트 키
               onChange={setRecaptchaToken}
               className="my-2"
             />
