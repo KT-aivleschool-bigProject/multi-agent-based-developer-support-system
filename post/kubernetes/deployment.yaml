@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: post
-          image: "bigproject.azurecr.io/post:prod"
+          image: "bigproject.azurecr.io/post:prod1"
           env:
             - name: AZURE_MYSQL_URL
               valueFrom:
@@ -39,15 +39,15 @@ spec:
             httpGet:
               path: '/actuator/health'
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 2
-            periodSeconds: 5
-            failureThreshold: 10
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: '/actuator/health'
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 2
-            periodSeconds: 5
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            periodSeconds: 10
             failureThreshold: 5

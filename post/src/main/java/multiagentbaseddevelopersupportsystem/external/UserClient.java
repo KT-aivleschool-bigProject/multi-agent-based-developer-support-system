@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import multiagentbaseddevelopersupportsystem.domain.UserDto;
 
-@FeignClient(name = "usermanagement", url = "localhost:8082")
+@FeignClient(name = "usermanagement", url = "usermanagement:8080")
 public interface UserClient {
     
     @GetMapping("/users/{userId}")
